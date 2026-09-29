@@ -1,0 +1,6 @@
+{
+  "name": "888 Avenger RCACS Band Portal",
+  "description": "Official management, roster, attendance and sheet music locker portal for 888 Avenger Royal Canadian Air Cadet Squadron Band.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
