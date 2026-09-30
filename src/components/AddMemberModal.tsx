@@ -99,7 +99,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
                 required
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
-                placeholder="e.g. Marcus"
+                placeholder="First name"
                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
               />
             </div>
@@ -110,7 +110,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
                 required
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
-                placeholder="e.g. Wong"
+                placeholder="Last name"
                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
               />
             </div>

@@ -14,7 +14,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   defaultMode = 'signin',
 }) => {
-  const { signIn, signUp, availableDemoProfiles, switchMockProfile, isLiveSupabase } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
@@ -64,11 +64,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setError(res.error || 'Registration failed');
       }
     }
-  };
-
-  const handleQuickDemoSelect = (profileId: string) => {
-    switchMockProfile(profileId);
-    onClose();
   };
 
   return (
@@ -136,7 +131,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={firstName}
                     onChange={e => setFirstName(e.target.value)}
-                    placeholder="Marcus"
+                    placeholder="First name"
                     className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
@@ -147,7 +142,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={lastName}
                     onChange={e => setLastName(e.target.value)}
-                    placeholder="Wong"
+                    placeholder="Last name"
                     className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
@@ -195,7 +190,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="e.g. sarah.tremblay@cadets365.ca"
+              placeholder="name@cadets.gc.ca"
               className="w-full px-3 py-2 text-xs font-mono bg-slate-950 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
             />
           </div>
@@ -211,9 +206,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               placeholder="••••••••••••"
               className="w-full px-3 py-2 text-xs font-mono bg-slate-950 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
             />
-            <span className="text-[10px] text-slate-500 mt-1 block">
-              In offline demo mode, enter any registered Cadet365 email to log in instantly.
-            </span>
           </div>
 
           <button
@@ -226,28 +218,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </form>
 
-        {/* 1-Click Demo Profiles for Seamless Testing */}
-        <div className="px-6 py-4 bg-slate-950/80 border-t border-slate-800">
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            1-Click Demo Roles (Immediate Evaluation):
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              onClick={() => handleQuickDemoSelect('u-admin-02')}
-              className="p-2 rounded-lg bg-blue-950/80 hover:bg-blue-900 border border-blue-800/60 text-left transition-colors"
-            >
-              <p className="font-semibold text-white">WO2 Ethan Chen</p>
-              <p className="text-[10px] text-amber-300 font-mono">Role: Admin (Officer / Band Senior)</p>
-            </button>
-            <button
-              onClick={() => handleQuickDemoSelect('u-member-01')}
-              className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition-colors"
-            >
-              <p className="font-semibold text-white">FSgt Tremblay</p>
-              <p className="text-[10px] text-slate-300 font-mono">Role: member (Flute)</p>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

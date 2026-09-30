@@ -16,9 +16,9 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateCurrentProfile: (updates: Partial<Profile>) => Promise<boolean>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; message: string; resetLink: string }>;
-  switchMockProfile: (profileId: string) => void;
+  switchProfile: (profileId: string) => void;
   deleteProfile: (profileId: string) => void;
-  availableDemoProfiles: Profile[];
+  availableProfiles: Profile[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,9 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     normalizeProfilesList(loadFromStorage<Profile[]>('profiles', INITIAL_PROFILES))
   );
 
-  // Default active profile: WO2 Ethan Chen (Band Cadet-in-Charge / Admin) or FSgt Tremblay (Member)
   const [activeProfileId, setActiveProfileId] = useState<string>(() => {
-    return loadFromStorage<string>('active_profile_id', 'u-admin-02');
+    return loadFromStorage<string>('active_profile_id', '');
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -124,7 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Fallback demo/mock login by email matching
+    // Local-only login by email matching is retained for portal records created
+    // before Supabase credentials are configured.
     const normalizedEmail = email.trim().toLowerCase();
     const matched = profiles.find(
       p => p.cadet365_email.toLowerCase() === normalizedEmail
@@ -139,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
     return {
       success: false,
-      error: `Cadet365 email '${email}' not found. You can choose a demo account below or register.`,
+      error: `Cadet365 email '${email}' not found.`,
     };
   };
 
@@ -278,7 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  const switchMockProfile = (profileId: string) => {
+  const switchProfile = (profileId: string) => {
     const target = profiles.find(p => p.id === profileId);
     if (target) {
       setActiveProfileId(target.id);
@@ -314,9 +314,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         updateCurrentProfile,
         sendPasswordResetEmail,
-        switchMockProfile,
+        switchProfile,
         deleteProfile,
-        availableDemoProfiles: profiles,
+        availableProfiles: profiles,
       }}
     >
       {children}

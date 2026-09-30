@@ -130,7 +130,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'rank', 'Cdt'),
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'instrument', 'Clarinet 1'),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'member'),
+    'member',
     COALESCE(NEW.raw_user_meta_data->>'phone', NULL)
   )
   ON CONFLICT (id) DO UPDATE SET
@@ -228,6 +228,10 @@ ON public.excused_absences FOR INSERT TO authenticated
 WITH CHECK (profile_id = auth.uid());
 
 -- 7. Supabase Storage Bucket ('sheet-music')
+DROP POLICY IF EXISTS "Authenticated can view sheet music files" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can upload sheet music files" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can update and delete sheet music files" ON storage.objects;
+
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES ('sheet-music', 'sheet-music', true, 52428800, ARRAY['application/pdf'])
 ON CONFLICT (id) DO UPDATE SET public = true;
