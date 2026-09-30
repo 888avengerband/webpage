@@ -49,7 +49,7 @@ export const MemberDashboard: React.FC = () => {
   const [profileSavedMessage, setProfileSavedMessage] = useState(false);
 
   // Absence Form state
-  const [absenceDate, setAbsenceDate] = useState('2026-10-07');
+  const [absenceDate, setAbsenceDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [absenceReason, setAbsenceReason] = useState('');
   const [absenceSubmitted, setAbsenceSubmitted] = useState(false);
   const [absenceError, setAbsenceError] = useState<string | null>(null);

@@ -68,11 +68,10 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     profile,
     role,
     isAdmin,
-    availableDemoProfiles,
-    switchMockProfile,
     updateCurrentProfile,
     sendPasswordResetEmail,
     deleteProfile,
+    signOut,
   } = useAuth();
   const {
     profiles,
@@ -126,6 +125,11 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     setTimeout(() => {
       setSaveToast(curr => (curr?.id === id ? null : curr));
     }, 3500);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    onLogout();
   };
 
   // AE View / Edit Modal for Admins on Roll Call
@@ -183,21 +187,37 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     'Lt': 80,
     '2Lt': 70,
     'OCdt': 60,
-    'Officer': 55,
-    'CI': 50,
-    'CV': 45,
-    'WO1': 40,
-    'WO2': 35,
-    'FSgt': 30,
-    'Sgt': 25,
-    'FCpl': 20,
-    'Cpl': 15,
-    'LAC': 10,
-    'Cdt': 5,
+    'CI': 55,
+    'CV': 50,
+    'WO1': 45,
+    'WO2': 40,
+    'FSgt': 35,
+    'Sgt': 30,
+    'FCpl': 25,
+    'Cpl': 20,
+    'LAC': 15,
+    'Cdt': 10,
   };
 
+  const attendanceEventOptions = useMemo(() => {
+    const scheduledEvents = [...calendarEvents]
+      .sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time))
+      .map(event => ({
+        id: event.id,
+        date: event.date,
+        label: `${event.date} — ${event.title}`,
+      }));
+    const scheduledDates = new Set(scheduledEvents.map(event => event.date));
+    const recordedDates = [...new Set(attendanceRecords.map(record => record.date))]
+      .filter(date => !scheduledDates.has(date))
+      .sort((a, b) => b.localeCompare(a))
+      .map(date => ({ id: `recorded-${date}`, date, label: `${date} — Recorded attendance` }));
+
+    return [...scheduledEvents, ...recordedDates];
+  }, [attendanceRecords, calendarEvents]);
+
   // Absence Form state
-  const [absenceDate, setAbsenceDate] = useState('2026-10-07');
+  const [absenceDate, setAbsenceDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [absenceReason, setAbsenceReason] = useState('');
   const [absenceSuccess, setAbsenceSuccess] = useState(false);
 
@@ -515,34 +535,11 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     </p>
                   </div>
 
-                  <div className="py-1">
-                    <p className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Switch Cadet Account
-                    </p>
-                    {availableDemoProfiles.slice(0, 4).map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          switchMockProfile(p.id);
-                          setIsProfileMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-left ${
-                          p.id === profile.id
-                            ? 'bg-sky-50 text-sky-800 font-semibold'
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span>{p.rank} {p.last_name} ({p.role})</span>
-                        {p.id === profile.id && <Check className="w-3.5 h-3.5 text-sky-600" />}
-                      </button>
-                    ))}
-                  </div>
-
                   <div className="pt-1 border-t border-slate-100">
                     <button
                       onClick={() => {
                         setIsProfileMenuOpen(false);
-                        onLogout();
+                        handleLogout();
                       }}
                       className="w-full flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-rose-600 hover:bg-rose-50 font-medium"
                     >
@@ -555,7 +552,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             </div>
 
             <button
-              onClick={onLogout}
+              onClick={handleLogout}
               className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -1287,11 +1284,15 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     onChange={e => setActiveRehearsalDate(e.target.value)}
                     className="px-3 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
                   >
-                    {rehearsalDates.map(d => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
+                    {attendanceEventOptions.length === 0 ? (
+                      <option value={activeRehearsalDate}>No calendar events scheduled</option>
+                    ) : (
+                      attendanceEventOptions.map(event => (
+                        <option key={event.id} value={event.date}>
+                          {event.label}
+                        </option>
+                      ))
+                    )}
                   </select>
 
                   <button

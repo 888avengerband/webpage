@@ -2,21 +2,10 @@ import React from 'react';
 import {
   Shield,
   Music,
-  Calendar,
-  Clock,
-  MapPin,
   ChevronRight,
   Award,
-  Users,
-  FileText,
-  CheckCircle2,
-  BellRing,
   ExternalLink,
-  Lock,
-  Compass,
-  Building,
   Sparkles,
-  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { SquadronCrest } from './SquadronCrest';
@@ -32,7 +21,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenSqlModal,
   onOpenAuthModal,
 }) => {
-  const { role, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
 
   return (
     <div className="space-y-14 pb-16">
@@ -221,131 +210,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Repertoire Showcase */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-blue-900/80">
-          <div>
-            <span className="text-xs font-mono text-amber-300 tracking-wider uppercase block mb-1 font-bold">
-              Active Music Repertoire
-            </span>
-            <h2 className="font-heading text-2xl font-bold text-white">
-              Ceremonial Marches & Concert Literature
-            </h2>
-          </div>
-          <button
-            onClick={() => onEnterPortal('member')}
-            className="mt-3 md:mt-0 text-xs font-bold text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 transition-colors"
-          >
-            <span>Open Cadet Music Locker</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            {
-              title: 'The Great Escape',
-              composer: 'Elmer Bernstein',
-              description: 'Primary parade march with soaring brass fanfare and syncopated woodwind counter-melodies.',
-              parts: 'Trumpet, Clarinet, Flute, Snare',
-            },
-            {
-              title: 'RCAF March Past',
-              composer: 'Sir Walford Davies',
-              description: 'The official ceremonial march of the Royal Canadian Air Force and Air Cadet League.',
-              parts: 'Full Conductor Score, Brass, Reeds',
-            },
-            {
-              title: 'Heart of Oak',
-              composer: 'Dr. William Boyce',
-              description: 'Ceremonial quickstep performed at inter-element and naval joint evolutions in Vancouver.',
-              parts: 'Flute, Clarinet, Trumpet, Drums',
-            },
-            {
-              title: 'O Canada (Ceremonial Bb)',
-              composer: 'Calixa Lavallée',
-              description: 'Standard military band anthem arranged for solemn parade presentations and ACR inspection.',
-              parts: 'Full Symphonic Band Key Bb',
-            },
-          ].map((song, idx) => (
-            <div
-              key={idx}
-              className="p-5 rounded-xl bg-[#0D2345] border border-blue-800/80 hover:border-amber-400/50 transition-colors flex flex-col justify-between shadow-md"
-            >
-              <div>
-                <div className="flex items-center justify-between text-xs text-amber-300 font-mono mb-2 font-bold">
-                  <span>Score 0{idx + 1}</span>
-                  <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                </div>
-                <h3 className="text-sm font-bold text-white mb-1">{song.title}</h3>
-                <p className="text-[11px] text-slate-300 italic mb-2">{song.composer}</p>
-                <p className="text-xs text-slate-200 leading-relaxed mb-4">{song.description}</p>
-              </div>
-              <div className="pt-3 border-t border-blue-900/80 text-[11px] text-slate-300 font-mono">
-                Parts: {song.parts}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Routine Orders & Vancouver Parades */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-2xl bg-gradient-to-r from-[#0C244A] via-[#0D2345] to-[#071830] border-2 border-amber-400/40 p-8 shadow-2xl">
-          <div className="flex items-start gap-4 mb-6">
-            <div className="p-3 rounded-xl bg-amber-400/10 text-amber-300 border border-amber-400/40 shrink-0">
-              <BellRing className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="text-xs font-mono text-amber-300 uppercase tracking-wider block font-bold">
-                Squadron Routine Orders
-              </span>
-              <h3 className="text-xl font-bold text-white font-heading">
-                Upcoming 888 Avenger Band Engagements (Vancouver, BC)
-              </h3>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
-            <div className="p-4 rounded-xl bg-[#07172F] border border-blue-900/80">
-              <p className="font-mono text-amber-300 font-bold">11 October 2026</p>
-              <h4 className="font-bold text-white mt-1 text-sm">Battle of Britain Memorial</h4>
-              <p className="text-slate-300 mt-1 leading-relaxed">
-                Ceremonial massed band performance in Vancouver. Full C-1 uniform with white accoutrements.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#07172F] border border-blue-900/80">
-              <p className="font-mono text-amber-300 font-bold">11 November 2026</p>
-              <h4 className="font-bold text-white mt-1 text-sm">Remembrance Day Parade (Vancouver)</h4>
-              <p className="text-slate-300 mt-1 leading-relaxed">
-                Annual civic parade march at Vancouver Cenotaph / Victory Square & Chinatown. Band leads flight formations.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#07172F] border border-blue-900/80">
-              <p className="font-mono text-amber-300 font-bold">28 May 2027</p>
-              <h4 className="font-bold text-white mt-1 text-sm">Annual Ceremonial Review (ACR)</h4>
-              <p className="text-slate-300 mt-1 leading-relaxed">
-                Vancouver South drill square annual inspection, presentation of arms, musical salute, and squadron awards.
-              </p>
-            </div>
-          </div>
-
-          {/* Absence note reminder */}
-          <div className="mt-6 pt-5 border-t border-blue-900/80 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-300">
-            <p>
-              <strong className="text-amber-300">Cadet Notice:</strong> Anticipating an absence from parade night? Submit an Excused Absence Form at least 48 hours prior to rehearsal.
-            </p>
-            <button
-              onClick={() => onEnterPortal('member')}
-              className="text-amber-300 hover:text-amber-200 font-bold underline underline-offset-4"
-            >
-              Submit Absence Request →
-            </button>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

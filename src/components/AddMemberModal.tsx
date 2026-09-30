@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, UserPlus, Shield, Music, Phone, Mail, Award } from 'lucide-react';
-import { CadetRank, CADET_RANKS, STANDARD_INSTRUMENTS, UserRole } from '../types/database';
+import { X, UserPlus } from 'lucide-react';
+import { CadetRank, CADET_RANKS, STANDARD_INSTRUMENTS } from '../types/database';
 import { useBandData } from '../context/BandDataContext';
 
 interface AddMemberModalProps {
@@ -16,9 +16,9 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
   const [rank, setRank] = useState<CadetRank>('Cdt');
   const [cadet365Email, setCadet365Email] = useState('');
   const [instrument, setInstrument] = useState<string>(STANDARD_INSTRUMENTS[0]);
-  const [role, setRole] = useState<UserRole>('member');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -26,6 +26,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (!firstName.trim() || !lastName.trim()) {
       setError('Please provide first and last name.');
@@ -44,7 +45,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       rank,
       cadet365_email: cadet365Email.trim().toLowerCase(),
       instrument,
-      role,
+      role: 'member',
       phone: phone.trim() || null,
     });
 
@@ -55,7 +56,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       setLastName('');
       setCadet365Email('');
       setPhone('');
-      onClose();
+      setSuccess(res.message || `Invitation email sent to ${cadet365Email.trim().toLowerCase()}.`);
     } else {
       setError(res.error || 'Failed to add member to roster.');
     }
@@ -90,6 +91,11 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
               {error}
             </div>
           )}
+          {success && (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+              {success}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -99,7 +105,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
                 required
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
-                placeholder="e.g. Marcus"
+                placeholder="First name"
                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
               />
             </div>
@@ -110,39 +116,25 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
                 required
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
-                placeholder="e.g. Wong"
+                placeholder="Last name"
                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">Rank</label>
-              <select
-                value={rank}
-                onChange={e => setRank(e.target.value as CadetRank)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-              >
-                {CADET_RANKS.map(r => (
-                  <option key={r.value} value={r.value}>
-                    {r.label} ({r.fullTitle})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">Portal Role</label>
-              <select
-                value={role}
-                onChange={e => setRole(e.target.value as UserRole)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-              >
-                <option value="member">Member (Musician)</option>
-                <option value="admin">Admin (Officer / Band Senior)</option>
-              </select>
-            </div>
+          <div>
+            <label className="block font-medium text-slate-700 mb-1">Rank</label>
+            <select
+              value={rank}
+              onChange={e => setRank(e.target.value as CadetRank)}
+              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
+            >
+              {CADET_RANKS.map(r => (
+                <option key={r.value} value={r.value}>
+                  {r.label} ({r.fullTitle})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -199,7 +191,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
               disabled={isSubmitting}
               className="px-4 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-colors shadow-sm disabled:opacity-50"
             >
-              {isSubmitting ? 'Adding...' : 'Add to Roster'}
+              {isSubmitting ? 'Sending invite...' : 'Send Invite & Add to Roster'}
             </button>
           </div>
         </form>

@@ -29,7 +29,7 @@ interface BandDataContextType {
   // Profiles / Roster
   profiles: Profile[];
   visibleProfiles: Profile[];
-  addMember: (data: Omit<Profile, 'id' | 'created_at'>) => Promise<{ success: boolean; error?: string }>;
+  addMember: (data: Omit<Profile, 'id' | 'created_at'>) => Promise<{ success: boolean; message?: string; error?: string }>;
   updateMember: (id: string, updates: Partial<Profile>) => Promise<boolean>;
   deleteMember: (id: string) => Promise<boolean>;
 
@@ -125,8 +125,9 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     loadFromStorage<CalendarEvent[]>('calendar_events', INITIAL_CALENDAR_EVENTS)
   );
 
-  // Active rehearsal date defaults to the upcoming parade night (Wednesdays)
-  const [activeRehearsalDate, setActiveRehearsalDate] = useState<string>('2026-09-30');
+  const [activeRehearsalDate, setActiveRehearsalDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10)
+  );
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Persist state updates to local store
@@ -138,13 +139,36 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => { saveToStorage('excused_absences', excusedAbsences); }, [excusedAbsences]);
   useEffect(() => { saveToStorage('calendar_events', calendarEvents); }, [calendarEvents]);
 
+  useEffect(() => {
+    if (!isLiveSupabase || !profile) return;
+
+    const loadProfiles = async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true });
+      setIsLoading(false);
+
+      if (error) {
+        console.warn('Supabase roster sync warning:', error);
+        return;
+      }
+      setProfiles(data || []);
+    };
+
+    loadProfiles();
+  }, [isLiveSupabase, profile?.id]);
+
   // Derived unique rehearsal dates from calendar and attendance records
   const rehearsalDates = useMemo(() => {
     const dates = new Set<string>();
     calendarEvents.forEach(evt => dates.add(evt.date));
     attendanceRecords.forEach(r => dates.add(r.date));
-    dates.add('2026-09-30');
-    dates.add('2026-10-07');
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
   }, [attendanceRecords, calendarEvents]);
 
@@ -215,31 +239,75 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Add Member
   const addMember = async (
     data: Omit<Profile, 'id' | 'created_at'>
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; message?: string; error?: string }> => {
     if (!isAdmin) {
       return { success: false, error: 'Unauthorized: Admin role required to register members.' };
     }
 
-    const newId = `u-${Date.now().toString(36)}`;
-    const newProfile: Profile = {
-      ...data,
-      id: newId,
-      created_at: new Date().toISOString(),
-    };
-
-    setProfiles(prev => [newProfile, ...prev]);
-
-    // Live Supabase sync if enabled
     const supabase = getSupabaseClient();
     if (supabase && isSupabaseConfigured() && isLiveSupabase) {
-      try {
-        await supabase.from('profiles').insert([newProfile]);
-      } catch (err: any) {
-        console.warn('Supabase profile sync warning:', err);
+      const email = data.cadet365_email.trim().toLowerCase();
+      const { data: existingProfile, error: existingProfileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('cadet365_email', email)
+        .maybeSingle();
+
+      if (existingProfileError) {
+        return { success: false, error: existingProfileError.message };
       }
+      if (existingProfile) {
+        return { success: false, error: 'An account with this email is already on the roster.' };
+      }
+
+      const { error: inviteError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: window.location.origin,
+          data: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            rank: data.rank,
+            instrument: data.instrument,
+            phone: data.phone,
+          },
+        },
+      });
+
+      if (inviteError) {
+        return { success: false, error: inviteError.message };
+      }
+
+      const { data: createdProfile, error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: data.first_name,
+          last_name: data.last_name,
+          rank: data.rank,
+          instrument: data.instrument,
+          phone: data.phone,
+          role: 'member',
+        })
+        .eq('cadet365_email', email)
+        .select()
+        .single();
+
+      if (profileError || !createdProfile) {
+        return {
+          success: false,
+          error: profileError?.message || 'The invitation was sent, but the roster profile could not be created.',
+        };
+      }
+
+      setProfiles(prev => [createdProfile, ...prev.filter(member => member.id !== createdProfile.id)]);
+      return { success: true, message: `Invitation email sent to ${email}.` };
     }
 
-    return { success: true };
+    return {
+      success: false,
+      error: 'Configure Supabase before inviting members so the account and invitation email can be created.',
+    };
   };
 
   const updateMember = async (id: string, updates: Partial<Profile>): Promise<boolean> => {
@@ -317,7 +385,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       id: newPartId,
       song_id: newSongId,
       instrument_part: partName.trim(),
-      file_url: fileUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      file_url: fileUrl.trim(),
       created_at: new Date().toISOString(),
     };
 
@@ -350,7 +418,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       id: newPartId,
       song_id: songId,
       instrument_part: instrumentPart.trim(),
-      file_url: fileUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      file_url: fileUrl.trim(),
       created_at: new Date().toISOString(),
     };
 

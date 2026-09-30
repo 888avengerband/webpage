@@ -34,20 +34,22 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
   // Filter state
   const [filterType, setFilterType] = useState<string>('all');
   
-  // Month navigation: default to 2026-10 (October 2026, aligned with current squadron schedule)
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(9); // 0-indexed: 9 = October
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Month navigation defaults to the current month.
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth());
 
   // Add Event Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [title, setTitle] = useState('Wednesday Band Rehearsal');
+  const [title, setTitle] = useState('');
   const [eventType, setEventType] = useState<EventType>('rehearsal');
-  const [date, setDate] = useState('2026-10-21');
-  const [startTime, setStartTime] = useState('18:30');
-  const [endTime, setEndTime] = useState('21:00');
-  const [location, setLocation] = useState('Bessborough Armoury - Band Room');
-  const [dressCode, setDressCode] = useState('Band Polo / Squadron Civvies & Instrument');
-  const [notes, setNotes] = useState('Full ensemble warm-up, march-past accompaniment, sectional drill.');
+  const [date, setDate] = useState(today);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [location, setLocation] = useState('Walter Moberly Elementary');
+  const [dressCode, setDressCode] = useState('');
+  const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Month navigation helpers
@@ -88,43 +90,6 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
   const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
   const eventsInCurrentMonth = calendarEvents.filter(evt => evt.date.startsWith(monthPrefix));
 
-  // Quick preset application for the Add Event Form
-  const applyPreset = (preset: 'band' | 'parade' | 'clinic' | 'acr') => {
-    if (preset === 'band') {
-      setTitle('Wednesday Band Rehearsal');
-      setEventType('rehearsal');
-      setStartTime('18:30');
-      setEndTime('21:00');
-      setLocation('Bessborough Armoury - Band Room');
-      setDressCode('Band Polo / Civvies & Instrument');
-      setNotes('Full band rehearsal 18:30-21:00. Bring tuner, pencil, and music folder.');
-    } else if (preset === 'parade') {
-      setTitle('Friday Squadron Parade Night');
-      setEventType('parade');
-      setStartTime('18:30');
-      setEndTime('21:15');
-      setLocation('Main Drill Hall & Parade Square');
-      setDressCode('C2 Routine Duty Uniform (Polished Boots)');
-      setNotes('Squadron parade 18:30-21:15. Band performs march-on, general salute, and march-off.');
-    } else if (preset === 'clinic') {
-      setTitle('Regional Cadet Band Clinic');
-      setEventType('clinic');
-      setStartTime('09:00');
-      setEndTime('16:00');
-      setLocation('Seaforth Armoury (Vancouver)');
-      setDressCode('Band Polo & Squadron Tunics');
-      setNotes('Masterclass with guest military directors and sectional instruction.');
-    } else if (preset === 'acr') {
-      setTitle('Annual Ceremonial Review (ACR)');
-      setEventType('performance');
-      setStartTime('13:00');
-      setEndTime('17:00');
-      setLocation('Main Parade Square');
-      setDressCode('C1 Full Ceremonial (Medals, White Belts)');
-      setNotes('Squadron Annual Inspection & Final Parade. Full band accompaniment.');
-    }
-  };
-
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !date) return;
@@ -140,6 +105,14 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
       notes: notes.trim() || undefined,
     });
     setIsSubmitting(false);
+    setTitle('');
+    setEventType('rehearsal');
+    setDate(today);
+    setStartTime('');
+    setEndTime('');
+    setLocation('Walter Moberly Elementary');
+    setDressCode('');
+    setNotes('');
     setIsAddOpen(false);
   };
 
@@ -221,31 +194,6 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
                 <span>Add Date / Event</span>
               </button>
             )}
-          </div>
-        </div>
-
-        {/* Quick Squadron Timing Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0" />
-            <div>
-              <span className="font-bold text-slate-800 block">Band Rehearsals:</span>
-              <span className="text-slate-600 font-mono text-[11px]">Wednesdays 18:30 – 21:00 hrs</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-            <div>
-              <span className="font-bold text-slate-800 block">Squadron Parade:</span>
-              <span className="text-slate-600 font-mono text-[11px]">Fridays 18:30 – 21:15 hrs</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 sm:col-span-2 md:col-span-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-            <div>
-              <span className="font-bold text-slate-800 block">Location:</span>
-              <span className="text-slate-600 text-[11px] truncate">Bessborough Armoury / Parade Square</span>
-            </div>
           </div>
         </div>
 
@@ -336,7 +284,7 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
               const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
               const dayEvents = calendarEvents.filter(e => e.date === dateStr);
               const hasEvents = dayEvents.length > 0;
-              const isToday = dateStr === '2026-09-30' || dateStr === '2026-10-07';
+              const isToday = dateStr === new Date().toISOString().slice(0, 10);
 
               return (
                 <div
@@ -555,38 +503,6 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
               </button>
             </div>
 
-            {/* Quick Presets */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                Quick Timing Presets
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => applyPreset('band')}
-                  className="px-3 py-2 rounded-xl border border-sky-200 bg-sky-50/70 hover:bg-sky-100 text-sky-800 text-left font-semibold transition-colors flex items-center gap-2"
-                >
-                  <span className="w-2 h-2 rounded-full bg-sky-600 shrink-0" />
-                  <div>
-                    <span className="block font-bold">Band Rehearsal</span>
-                    <span className="text-[10px] text-sky-600 font-mono">18:30 – 21:00</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => applyPreset('parade')}
-                  className="px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 text-left font-semibold transition-colors flex items-center gap-2"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
-                  <div>
-                    <span className="block font-bold">Squadron Parade</span>
-                    <span className="text-[10px] text-emerald-600 font-mono">18:30 – 21:15</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
             <form onSubmit={handleFormSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block font-medium text-slate-700 mb-1">
@@ -672,7 +588,7 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
                   required
                   value={location}
                   onChange={e => setLocation(e.target.value)}
-                  placeholder="e.g. Bessborough Armoury - Band Room"
+                  placeholder="Walter Moberly Elementary"
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
                 />
               </div>
@@ -685,7 +601,6 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
                   type="text"
                   value={dressCode}
                   onChange={e => setDressCode(e.target.value)}
-                  placeholder="e.g. Band Polo & Civvies / C1 Full Ceremonial / C2 Duty"
                   className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
                 />
               </div>

@@ -15,10 +15,9 @@ export type CadetRank =
   | '2Lt'
   | 'Lt'
   | 'Capt'
-  | 'Maj'
-  | 'Officer';
+  | 'Maj';
 
-export const OFFICER_RANKS: CadetRank[] = ['OCdt', '2Lt', 'Lt', 'Capt', 'Maj', 'Officer'];
+export const OFFICER_RANKS: CadetRank[] = ['OCdt', '2Lt', 'Lt', 'Capt', 'Maj'];
 
 export const isOfficerRank = (rank: string): boolean => {
   return OFFICER_RANKS.includes(rank as CadetRank);
@@ -131,9 +130,9 @@ export const CADET_RANKS: { label: string; value: CadetRank; fullTitle: string }
   { label: 'Sgt', value: 'Sgt', fullTitle: 'Sergeant' },
   { label: 'FSgt', value: 'FSgt', fullTitle: 'Flight Sergeant' },
   { label: 'WO2', value: 'WO2', fullTitle: 'Warrant Officer 2nd Class' },
-  { label: 'WO1', value: 'WO1', fullTitle: 'Warrant Officer 1st Class' },
   { label: 'CV', value: 'CV', fullTitle: 'Civilian Volunteer' },
   { label: 'CI', value: 'CI', fullTitle: 'Civilian Instructor' },
+  { label: 'WO1', value: 'WO1', fullTitle: 'Warrant Officer 1st Class' },
   { label: 'OCdt', value: 'OCdt', fullTitle: 'Officer Cadet' },
   { label: '2Lt', value: '2Lt', fullTitle: '2nd Lieutenant' },
   { label: 'Lt', value: 'Lt', fullTitle: 'Lieutenant' },

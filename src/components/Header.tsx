@@ -4,10 +4,8 @@ import {
   Music,
   Database,
   Settings,
-  LogIn,
   LogOut,
   ChevronDown,
-  Check,
   MapPin,
   Clock,
   ExternalLink,
@@ -30,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettingsModal,
   onOpenAuthModal,
 }) => {
-  const { profile, role, availableDemoProfiles, switchMockProfile, signOut } = useAuth();
+  const { profile, role, signOut } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   return (
@@ -188,65 +186,17 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </div>
 
-                  {/* 1-Click Role Switcher */}
-                  <div className="py-2">
-                    <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-mono">
-                      Switch Cadet Account
-                    </p>
-                    <div className="max-h-48 overflow-y-auto space-y-0.5">
-                      {availableDemoProfiles.map(p => {
-                        const isActive = p.id === profile?.id;
-                        return (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              switchMockProfile(p.id);
-                              setIsProfileMenuOpen(false);
-                              if (p.role === 'admin' && currentTab === 'member') {
-                                setCurrentTab('admin');
-                              } else if (p.role === 'member' && currentTab === 'admin') {
-                                setCurrentTab('member');
-                              }
-                            }}
-                            className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-left transition-colors ${
-                              isActive
-                                ? 'bg-blue-900 text-white font-bold border border-amber-400/50'
-                                : 'text-slate-300 hover:bg-[#122A4E]'
-                            }`}
-                          >
-                            <div>
-                              <span className="text-amber-300 font-semibold">{p.rank}</span> {p.first_name} {p.last_name}
-                              <span className="text-[10px] text-slate-400 block font-mono">
-                                {p.role} · {p.instrument}
-                              </span>
-                            </div>
-                            {isActive && <Check className="w-3.5 h-3.5 text-amber-400" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-blue-900/60 flex items-center justify-between px-2">
-                    <button
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        onOpenAuthModal();
-                      }}
-                      className="text-[11px] text-slate-300 hover:text-white flex items-center gap-1"
-                    >
-                      <LogIn className="w-3 h-3" />
-                      <span>Cadet Login</span>
-                    </button>
+                  <div className="pt-2 border-t border-blue-900/60 px-2">
                     <button
                       onClick={() => {
                         signOut();
                         setIsProfileMenuOpen(false);
+                        setCurrentTab('landing');
                       }}
-                      className="text-[11px] text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                      className="w-full px-3 py-2 text-[11px] text-rose-400 hover:text-rose-300 hover:bg-[#122A4E] rounded-lg flex items-center gap-1.5"
                     >
                       <LogOut className="w-3 h-3" />
-                      <span>Reset</span>
+                      <span>Log out</span>
                     </button>
                   </div>
                 </div>

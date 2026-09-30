@@ -24,11 +24,11 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({ is
     }, 800);
   };
 
-  const handleResetToDemo = () => {
+  const handleClearCredentials = () => {
     updateSupabaseCredentials('', '');
     setUrl('');
     setKey('');
-    setStatusMessage('Reset to local store. Reloading...');
+    setStatusMessage('Credentials cleared. Reloading...');
     setTimeout(() => {
       window.location.reload();
     }, 800);
@@ -45,7 +45,7 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({ is
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">Supabase Connection</h3>
-              <p className="text-xs text-slate-500">Configure backend or test with local demo store</p>
+              <p className="text-xs text-slate-500">Configure the portal backend connection</p>
             </div>
           </div>
           <button
@@ -70,9 +70,9 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({ is
             <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-200 flex items-start gap-3">
               <Server className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-sky-900">Local Sandbox Mode</p>
+                <p className="font-bold text-sky-900">Local Data Mode</p>
                 <p className="text-sky-700 leading-relaxed">
-                  Running with pre-loaded 888 Avenger Squadron roster, rehearsals, and sheet music.
+                  No records are pre-loaded. Configure Supabase to use the production backend.
                 </p>
               </div>
             </div>
@@ -115,10 +115,10 @@ export const SupabaseSettingsModal: React.FC<SupabaseSettingsModalProps> = ({ is
             <div className="pt-2 flex items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={handleResetToDemo}
+                onClick={handleClearCredentials}
                 className="px-3.5 py-2 font-semibold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
               >
-                Reset to Demo
+                Clear credentials
               </button>
 
               <div className="flex items-center gap-2">

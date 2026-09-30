@@ -25,7 +25,7 @@ CREATE TABLE public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-    rank TEXT NOT NULL DEFAULT 'Cdt' CHECK (rank IN ('Cdt', 'LAC', 'Cpl', 'FCpl', 'Sgt', 'FSgt', 'WO2', 'WO1', 'CV', 'CI', 'Officer')),
+    rank TEXT NOT NULL DEFAULT 'Cdt' CHECK (rank IN ('Cdt', 'LAC', 'Cpl', 'FCpl', 'Sgt', 'FSgt', 'WO2', 'CV', 'CI', 'WO1', 'OCdt', '2Lt', 'Lt', 'Capt', 'Maj')),
     cadet365_email TEXT UNIQUE NOT NULL,
     instrument TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
@@ -130,7 +130,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'rank', 'Cdt'),
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'instrument', 'Clarinet 1'),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'member'),
+    'member',
     COALESCE(NEW.raw_user_meta_data->>'phone', NULL)
   )
   ON CONFLICT (id) DO UPDATE SET
@@ -228,6 +228,10 @@ ON public.excused_absences FOR INSERT TO authenticated
 WITH CHECK (profile_id = auth.uid());
 
 -- 7. Supabase Storage Bucket ('sheet-music')
+DROP POLICY IF EXISTS "Authenticated can view sheet music files" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can upload sheet music files" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can update and delete sheet music files" ON storage.objects;
+
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES ('sheet-music', 'sheet-music', true, 52428800, ARRAY['application/pdf'])
 ON CONFLICT (id) DO UPDATE SET public = true;

@@ -16,9 +16,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateCurrentProfile: (updates: Partial<Profile>) => Promise<boolean>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; message: string; resetLink: string }>;
-  switchMockProfile: (profileId: string) => void;
   deleteProfile: (profileId: string) => void;
-  availableDemoProfiles: Profile[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,9 +26,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     normalizeProfilesList(loadFromStorage<Profile[]>('profiles', INITIAL_PROFILES))
   );
 
-  // Default active profile: WO2 Ethan Chen (Band Cadet-in-Charge / Admin) or FSgt Tremblay (Member)
   const [activeProfileId, setActiveProfileId] = useState<string>(() => {
-    return loadFromStorage<string>('active_profile_id', 'u-admin-02');
+    return loadFromStorage<string>('active_profile_id', '');
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -81,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || null;
   const role: UserRole = activeProfile?.role || 'member';
 
   const signIn = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
@@ -124,7 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Fallback demo/mock login by email matching
+    // Local-only login by email matching is retained for portal records created
+    // before Supabase credentials are configured.
     const normalizedEmail = email.trim().toLowerCase();
     const matched = profiles.find(
       p => p.cadet365_email.toLowerCase() === normalizedEmail
@@ -139,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
     return {
       success: false,
-      error: `Cadet365 email '${email}' not found. You can choose a demo account below or register.`,
+      error: `Cadet365 email '${email}' not found.`,
     };
   };
 
@@ -225,11 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Sign out error', e);
       }
     }
-    // Set to first member profile for smooth experience
-    const firstMember = profiles.find(p => p.role === 'member') || profiles[0];
-    if (firstMember) {
-      setActiveProfileId(firstMember.id);
-    }
+    setActiveProfileId('');
   };
 
   const updateCurrentProfile = async (updates: Partial<Profile>): Promise<boolean> => {
@@ -278,13 +272,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  const switchMockProfile = (profileId: string) => {
-    const target = profiles.find(p => p.id === profileId);
-    if (target) {
-      setActiveProfileId(target.id);
-    }
-  };
-
   const deleteProfile = (profileId: string) => {
     setProfiles(prev => {
       const next = prev.filter(p => p.id !== profileId);
@@ -314,9 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         updateCurrentProfile,
         sendPasswordResetEmail,
-        switchMockProfile,
         deleteProfile,
-        availableDemoProfiles: profiles,
       }}
     >
       {children}
