@@ -19,7 +19,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onBackToSplash,
   onLoginSuccess,
 }) => {
-  const { signIn, switchMockProfile } = useAuth();
+  const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,11 +38,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     } else {
       setError(res.error || 'Invalid credentials.');
     }
-  };
-
-  const handleQuickDemo = (profileId: string) => {
-    switchMockProfile(profileId);
-    onLoginSuccess();
   };
 
   return (
@@ -91,7 +86,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="NPark123@cdt.cadets.gc.ca or bob.ross@cadets.gc.ca"
+                placeholder="name@cadets.gc.ca"
                 className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 font-mono"
               />
             </div>
@@ -130,29 +125,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </span>
         </div>
 
-        {/* 1-Click Quick Demo Sign In */}
-        <div className="mt-6 pt-5 border-t border-sky-100">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-center mb-3">
-            Fast 1-Click Access (Testing Personas)
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              onClick={() => handleQuickDemo('u-admin-02')}
-              className="p-2.5 rounded-xl bg-sky-50/80 hover:bg-sky-100 border border-sky-200 text-left transition-colors"
-            >
-              <p className="font-bold text-slate-900">WO2 Ethan Chen</p>
-              <p className="text-[11px] text-sky-700 font-mono font-medium">Role: Admin (Officer / Band Senior)</p>
-            </button>
-
-            <button
-              onClick={() => handleQuickDemo('u-member-01')}
-              className="p-2.5 rounded-xl bg-white hover:bg-sky-50/50 border border-slate-200 text-left transition-colors"
-            >
-              <p className="font-bold text-slate-900">FSgt Tremblay</p>
-              <p className="text-[11px] text-slate-600 font-mono font-medium">Role: Cadet Musician (Flute)</p>
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Footer info */}

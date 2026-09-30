@@ -44,7 +44,7 @@ VITE_SUPABASE_URL="https://your-project-id.supabase.co"
 VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
-*(Note: The app is equipped with a built-in offline demo store, allowing full testing of all workflows immediately even prior to entering Supabase keys.)*
+The portal starts with an empty local data store. Configure Supabase before creating accounts or operational records.
 
 ### 3. Run Development Server
 ```bash
@@ -60,6 +60,14 @@ Navigate to `http://localhost:3000`.
 2. Open the **SQL Editor** tab.
 3. Open `/supabase-schema.sql` (or click the **Supabase SQL** button in the portal header to copy it with 1 click).
 4. Paste the entire script into the SQL editor and click **Run**.
+
+The script creates an empty database; it does not insert roster, music, attendance, calendar, or absence records. New accounts are always created as `member` accounts. After creating the first officer account, promote it in the SQL Editor with:
+
+```sql
+UPDATE public.profiles
+SET role = 'admin'
+WHERE cadet365_email = 'officer-email@example.com';
+```
 
 ### Schema Summary
 - `profiles`: Linked 1:1 to `auth.users(id)` storing `first_name`, `last_name`, `rank`, `cadet365_email`, `instrument`, `role` ('admin' | 'member'), and `phone`.

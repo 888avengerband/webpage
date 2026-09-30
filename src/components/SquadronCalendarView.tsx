@@ -336,7 +336,7 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
               const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
               const dayEvents = calendarEvents.filter(e => e.date === dateStr);
               const hasEvents = dayEvents.length > 0;
-              const isToday = dateStr === '2026-09-30' || dateStr === '2026-10-07';
+              const isToday = dateStr === new Date().toISOString().slice(0, 10);
 
               return (
                 <div

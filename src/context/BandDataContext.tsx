@@ -125,8 +125,9 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     loadFromStorage<CalendarEvent[]>('calendar_events', INITIAL_CALENDAR_EVENTS)
   );
 
-  // Active rehearsal date defaults to the upcoming parade night (Wednesdays)
-  const [activeRehearsalDate, setActiveRehearsalDate] = useState<string>('2026-09-30');
+  const [activeRehearsalDate, setActiveRehearsalDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10)
+  );
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Persist state updates to local store
@@ -143,8 +144,6 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const dates = new Set<string>();
     calendarEvents.forEach(evt => dates.add(evt.date));
     attendanceRecords.forEach(r => dates.add(r.date));
-    dates.add('2026-09-30');
-    dates.add('2026-10-07');
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
   }, [attendanceRecords, calendarEvents]);
 
@@ -317,7 +316,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       id: newPartId,
       song_id: newSongId,
       instrument_part: partName.trim(),
-      file_url: fileUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      file_url: fileUrl.trim(),
       created_at: new Date().toISOString(),
     };
 
@@ -350,7 +349,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       id: newPartId,
       song_id: songId,
       instrument_part: instrumentPart.trim(),
-      file_url: fileUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      file_url: fileUrl.trim(),
       created_at: new Date().toISOString(),
     };
 

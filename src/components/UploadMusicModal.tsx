@@ -16,7 +16,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const [title, setTitle] = useState('');
   const [composer, setComposer] = useState('');
   const [partName, setPartName] = useState(STANDARD_INSTRUMENTS[0]);
-  const [fileUrl, setFileUrl] = useState('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+  const [fileUrl, setFileUrl] = useState('');
   const [isImageFile, setIsImageFile] = useState(false);
   const [selectedCadetIds, setSelectedCadetIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +51,12 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    if (!fileUrl) {
+      alert('Please select a PDF or image file');
+      setIsSubmitting(false);
+      return;
+    }
 
     if (mode === 'new_song') {
       if (!title.trim()) {

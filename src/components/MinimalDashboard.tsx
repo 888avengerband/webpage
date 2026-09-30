@@ -68,8 +68,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     profile,
     role,
     isAdmin,
-    availableDemoProfiles,
-    switchMockProfile,
+    availableProfiles,
+    switchProfile,
     updateCurrentProfile,
     sendPasswordResetEmail,
     deleteProfile,
@@ -197,7 +197,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   };
 
   // Absence Form state
-  const [absenceDate, setAbsenceDate] = useState('2026-10-07');
+  const [absenceDate, setAbsenceDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [absenceReason, setAbsenceReason] = useState('');
   const [absenceSuccess, setAbsenceSuccess] = useState(false);
 
@@ -519,11 +519,11 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     <p className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                       Switch Cadet Account
                     </p>
-                    {availableDemoProfiles.slice(0, 4).map(p => (
+                    {availableProfiles.slice(0, 4).map(p => (
                       <button
                         key={p.id}
                         onClick={() => {
-                          switchMockProfile(p.id);
+                          switchProfile(p.id);
                           setIsProfileMenuOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-left ${

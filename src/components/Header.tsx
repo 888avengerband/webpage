@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettingsModal,
   onOpenAuthModal,
 }) => {
-  const { profile, role, availableDemoProfiles, switchMockProfile, signOut } = useAuth();
+  const { profile, role, availableProfiles, switchProfile, signOut } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   return (
@@ -194,13 +194,13 @@ export const Header: React.FC<HeaderProps> = ({
                       Switch Cadet Account
                     </p>
                     <div className="max-h-48 overflow-y-auto space-y-0.5">
-                      {availableDemoProfiles.map(p => {
+                      {availableProfiles.map(p => {
                         const isActive = p.id === profile?.id;
                         return (
                           <button
                             key={p.id}
                             onClick={() => {
-                              switchMockProfile(p.id);
+                              switchProfile(p.id);
                               setIsProfileMenuOpen(false);
                               if (p.role === 'admin' && currentTab === 'member') {
                                 setCurrentTab('admin');
