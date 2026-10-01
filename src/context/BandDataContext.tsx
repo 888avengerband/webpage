@@ -130,6 +130,40 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Sync Supabase profiles into the state on mount
+  useEffect(() => {
+    const syncSupabaseProfiles = async () => {
+      const supabase = getSupabaseClient();
+      if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+        try {
+          const { data, error } = await supabase.from('profiles').select('*');
+          if (error) {
+            console.warn('Supabase profile fetch warning:', error);
+            return;
+          }
+          if (data && data.length > 0) {
+            // Merge Supabase profiles with local profiles, preferring Supabase
+            setProfiles(prev => {
+              const merged = [...prev];
+              data.forEach((supabaseProfile: Profile) => {
+                const existingIdx = merged.findIndex(p => p.id === supabaseProfile.id);
+                if (existingIdx >= 0) {
+                  merged[existingIdx] = supabaseProfile;
+                } else {
+                  merged.unshift(supabaseProfile);
+                }
+              });
+              return normalizeProfilesList(merged);
+            });
+          }
+        } catch (err) {
+          console.warn('Supabase profile sync error:', err);
+        }
+      }
+    };
+    syncSupabaseProfiles();
+  }, [isLiveSupabase]);
+
   // Persist state updates to local store
   useEffect(() => { saveToStorage('profiles', profiles); }, [profiles]);
   useEffect(() => { saveToStorage('sheet_music', sheetMusic); }, [sheetMusic]);
@@ -172,11 +206,11 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return excusedAbsences.filter(ea => ea.profile_id === profile.id);
   }, [excusedAbsences, profile, isAdmin]);
 
-  // Sheet Music Locker for current cadet
+  // Sheet Music Locker for current cadet/admin
   const myAssignedMusic = useMemo(() => {
     if (!profile) return [];
 
-    // Find all song_part_ids assigned to current cadet
+    // Find all song_part_ids assigned to current user
     const myPartIds = new Set(
       partAssignments
         .filter(pa => pa.profile_id === profile.id)
@@ -486,12 +520,12 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!isAdmin) return false;
 
     setAttendanceRecords(prev => {
-      // Find all current cadet profiles (members)
-      const cadets = profiles.filter(p => p.role === 'member');
+      // Include both admins and members in roll call
+      const allPersonnel = profiles.filter(p => p.role === 'admin' || p.role === 'member');
       const updated = [...prev];
 
-      cadets.forEach(cadet => {
-        const idx = updated.findIndex(r => r.profile_id === cadet.id && r.date === date);
+      allPersonnel.forEach(person => {
+        const idx = updated.findIndex(r => r.profile_id === person.id && r.date === date);
         if (idx >= 0) {
           // If already marked as AE, keep it; otherwise mark Present
           if (updated[idx].status !== 'Absent Excused - AE') {
@@ -503,8 +537,8 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         } else {
           updated.push({
-            id: `att-${Date.now().toString(36)}-${cadet.id.slice(-3)}`,
-            profile_id: cadet.id,
+            id: `att-${Date.now().toString(36)}-${person.id.slice(-3)}`,
+            profile_id: person.id,
             date,
             status: 'Present',
             marked_by: profile?.id || null,
