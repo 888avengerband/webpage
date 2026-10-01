@@ -46,7 +46,7 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
   const [startTime, setStartTime] = useState('18:30');
   const [endTime, setEndTime] = useState('21:00');
   const [location, setLocation] = useState('Walter Moberly Elementary Gym');
-  const [dressCode, setDressCode] = useState(Appropriate Civilian Clothing');
+  const [dressCode, setDressCode] = useState('Appropriate Civilian Clothing');
   const [notes, setNotes] = useState('N/A');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
