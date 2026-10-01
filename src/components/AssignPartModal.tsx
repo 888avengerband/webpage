@@ -45,10 +45,11 @@ export const AssignPartModal: React.FC<AssignPartModalProps> = ({
     onClose();
   };
 
-  const memberProfiles = profiles.filter(p => p.role === 'member');
-  const instruments = Array.from(new Set(memberProfiles.map(p => p.instrument)));
+  // Include both admins and members in part assignments
+  const eligibleProfiles = profiles.filter(p => p.role === 'admin' || p.role === 'member');
+  const instruments = Array.from(new Set(eligibleProfiles.map(p => p.instrument)));
 
-  const filteredCadets = memberProfiles.filter(p => {
+  const filteredCadets = eligibleProfiles.filter(p => {
     if (filterInstrument === 'all') return true;
     return p.instrument === filterInstrument;
   });
@@ -87,7 +88,7 @@ export const AssignPartModal: React.FC<AssignPartModalProps> = ({
                 onChange={e => setFilterInstrument(e.target.value)}
                 className="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:border-sky-500"
               >
-                <option value="all">All Instruments ({memberProfiles.length})</option>
+                <option value="all">All Instruments ({eligibleProfiles.length})</option>
                 {instruments.map(inst => (
                   <option key={inst} value={inst}>
                     {inst}
@@ -137,6 +138,7 @@ export const AssignPartModal: React.FC<AssignPartModalProps> = ({
                     <div>
                       <span className="font-bold text-sky-700 mr-1">{cadet.rank}</span>
                       {cadet.first_name} {cadet.last_name}
+                      {cadet.role === 'admin' && <span className="ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">Admin</span>}
                     </div>
                   </div>
                   <span className="text-[11px] text-slate-500 font-mono">{cadet.instrument}</span>
@@ -146,7 +148,7 @@ export const AssignPartModal: React.FC<AssignPartModalProps> = ({
           </div>
 
           <p className="text-slate-500">
-            Assigned to <span className="font-bold text-sky-700 font-mono tabular-nums">{selectedCadetIds.length}</span> cadet{selectedCadetIds.length === 1 ? '' : 's'}. They will immediately see this part in their locker.
+            Assigned to <span className="font-bold text-sky-700 font-mono tabular-nums">{selectedCadetIds.length}</span> cadet{selectedCadetIds.length === 1 ? '' : 's'}. They will immediately see these parts in their locker.
           </p>
 
           <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-200">
