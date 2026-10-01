@@ -55,6 +55,9 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       setLastName('');
       setCadet365Email('');
       setPhone('');
+      setRank('Cdt');
+      setInstrument(STANDARD_INSTRUMENTS[0]);
+      setRole('member');
       onClose();
     } else {
       setError(res.error || 'Failed to add member to roster.');
@@ -156,7 +159,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
               className="w-full px-3 py-2 font-mono bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
             />
             <p className="text-[10px] text-slate-400 mt-1">
-              Format: <span className="font-mono text-sky-600">NPark123@cdt.cadets.gc.ca</span> for cadets · <span className="font-mono text-sky-600">bob.ross@cadets.gc.ca</span> for officers, CIs, and volunteers
+              Format: <span className="font-mono text-sky-600">NPark123@cdt.cadets.gc.ca</span> for cadets · <span className="font-mono text-sky-600">bob.ross@cadets.gc.ca</span> for officers, CI
             </p>
           </div>
 
