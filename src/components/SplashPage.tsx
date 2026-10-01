@@ -15,7 +15,6 @@ import { SquadronCrest } from './SquadronCrest';
 
 interface SplashPageProps {
   onGoToLogin: () => void;
-  onOpenSqlModal: () => void;
 }
 
 interface SquadronPhoto {
@@ -52,7 +51,6 @@ const SQUADRON_PHOTOS: SquadronPhoto[] = [
 
 export const SplashPage: React.FC<SplashPageProps> = ({
   onGoToLogin,
-  onOpenSqlModal,
 }) => {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const activePhoto = SQUADRON_PHOTOS[activePhotoIndex];
@@ -282,16 +280,10 @@ export const SplashPage: React.FC<SplashPageProps> = ({
             >
               888aircadets.ca
             </a>
-            <span>·</span>
-            <button
-              onClick={onOpenSqlModal}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Database Setup
-            </button>
           </div>
         </div>
       </footer>
     </div>
   );
 };
+

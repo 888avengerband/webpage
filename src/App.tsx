@@ -23,7 +23,6 @@ const MainAppContent: React.FC = () => {
       {currentView === 'splash' && (
         <SplashPage
           onGoToLogin={() => setCurrentView('login')}
-          onOpenSqlModal={() => setIsSqlModalOpen(true)}
         />
       )}
 
