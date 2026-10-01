@@ -33,7 +33,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
     }
 
     if (!cadet365Email.trim() || !cadet365Email.includes('@')) {
-      setError('Please provide a valid Cadet365 email address.');
+      setError('Please provide a valid email address.');
       return;
     }
 
@@ -155,11 +155,11 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
               required
               value={cadet365Email}
               onChange={e => setCadet365Email(e.target.value)}
-              placeholder="NPark123@cdt.cadets.gc.ca or bob.ross@cadets.gc.ca"
+              placeholder="JSmith123@cdt.cadets.gc.ca or john.shith@cadets.gc.ca"
               className="w-full px-3 py-2 font-mono bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
             />
             <p className="text-[10px] text-slate-400 mt-1">
-              Format: <span className="font-mono text-sky-600">NPark123@cdt.cadets.gc.ca</span> for cadets · <span className="font-mono text-sky-600">bob.ross@cadets.gc.ca</span> for officers, CI
+              Format: <span className="font-mono text-sky-600">JSmith123@cdt.cadets.gc.ca</span> for cadets · <span className="font-mono text-sky-600">john.smith@cadets.gc.ca</span> for officers, CI
             </p>
           </div>
 
