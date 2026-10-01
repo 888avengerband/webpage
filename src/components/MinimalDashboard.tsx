@@ -178,22 +178,21 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   // Military rank weight order: Officers -> Senior NCOs -> Junior NCOs -> Cadets
   const RANK_ORDER: Record<string, number> = {
-    'Maj': 100,
-    'Capt': 90,
-    'Lt': 80,
-    '2Lt': 70,
-    'OCdt': 60,
-    'Officer': 55,
-    'CI': 50,
-    'CV': 45,
-    'WO1': 40,
-    'WO2': 35,
-    'FSgt': 30,
-    'Sgt': 25,
-    'FCpl': 20,
-    'Cpl': 15,
-    'LAC': 10,
-    'Cdt': 5,
+    'Maj': 15,
+    'Capt': 14,
+    'Lt': 13,
+    '2Lt': 12,
+    'OCdt': 11,
+    'CI': 10,
+    'CV': 9,
+    'WO1': 8,
+    'WO2': 7,
+    'FSgt': 6,
+    'Sgt': 5,
+    'FCpl': 4,
+    'Cpl': 3,
+    'LAC': 2,
+    'Cdt': 1,
   };
 
   // Absence Form state
