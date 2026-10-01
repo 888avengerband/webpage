@@ -107,7 +107,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   // Active sub-tab depending on role
   const [memberTab, setMemberTab] = useState<'locker' | 'calendar' | 'attendance' | 'absence' | 'profile'>('locker');
-  const [adminTab, setAdminTab] = useState<'rollcall' | 'calendar' | 'roster' | 'music' | 'profile'>('rollcall');
+  const [adminTab, setAdminTab] = useState<'rollcall' | 'calendar' | 'roster' | 'music' | 'my-parts' | 'profile'>('rollcall');
 
   // Delete Confirmation Modal State (Reliable in-app confirmation)
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<{
@@ -223,10 +223,9 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
       m.instrumentPart.toLowerCase().includes(musicSearch.toLowerCase())
   );
 
-  // Cadets for Attendance Roll Call: EXCLUDE OFFICERS and sort by chosen button
+  // Cadets for Attendance Roll Call: include admins as well as non-officer personnel
   const attendanceCadets = useMemo(() => {
-    // Only non-officers on attendance roll call!
-    let list = profiles.filter(p => !isOfficerRank(p.rank) && p.role !== 'admin');
+    let list = profiles.filter(p => p.role === 'admin' || !isOfficerRank(p.rank));
     list.sort((a, b) => {
       if (rollCallSortKey === 'rank') {
         const wa = RANK_ORDER[a.rank] ?? 0;
@@ -334,14 +333,11 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
       role: cadetModalRole,
     });
     if (ok) {
-      // Auto close cadet pop-up when saved
       setSelectedCadetModal(null);
-      // Show pop-up toast when saved
       showSaveToast('Record Saved Successfully', `${cadetFullName}'s profile records have been saved.`);
     }
   };
 
-  // Open AE Modal to view/edit AE reasons & info
   const handleOpenAeModal = (cadet: Profile) => {
     const existing = excusedAbsences.find(
       ea => ea.profile_id === cadet.id && ea.date_of_absence === activeRehearsalDate
@@ -459,7 +455,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-body">
-      {/* Minimal White Top Bar */}
       <header className="bg-white border-b border-slate-200/90 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -475,7 +470,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             </div>
           </div>
 
-          {/* Right Navigation & Profile */}
           <div className="flex items-center gap-3">
             <button
               onClick={onOpenSettingsModal}
@@ -485,7 +479,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               <Settings className="w-4 h-4" />
             </button>
 
-            {/* User Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -565,9 +558,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* Welcome Header */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
@@ -586,7 +577,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             </p>
           </div>
 
-          {/* Quick Metrics */}
           {role === 'member' ? (
             <div className="flex items-center gap-4 sm:border-l sm:border-slate-100 sm:pl-6 text-xs font-mono">
               <div>
@@ -620,7 +610,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           )}
         </div>
 
-        {/* Minimal Navigation Tabs */}
         <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-semibold">
           {role === 'member' ? (
             <>
@@ -665,6 +654,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 { id: 'calendar', label: 'Calendar & Dates', icon: Calendar, count: calendarEvents.length },
                 { id: 'roster', label: 'Roster', icon: Users, count: profiles.length },
                 { id: 'music', label: 'Music & Parts Manager', icon: Music, count: sheetMusic.length },
+                { id: 'my-parts', label: 'My Parts', icon: Music, count: myAssignedMusic.length },
                 { id: 'profile', label: 'Admin / Officer Profile', icon: User },
               ].map(t => {
                 const Icon = t.icon;
@@ -697,9 +687,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           )}
         </div>
 
-        {/* ========================================================================= */}
-        {/* MEMBER: SHEET MUSIC LOCKER */}
-        {/* ========================================================================= */}
         {role === 'member' && memberTab === 'locker' && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -771,345 +758,67 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* MEMBER: SQUADRON CALENDAR */}
-        {/* ========================================================================= */}
-        {role === 'member' && memberTab === 'calendar' && (
-          <SquadronCalendarView
-            isAdmin={false}
-            calendarEvents={calendarEvents}
-            onAddEvent={addCalendarEvent}
-            onDeleteEvent={(id, title, subtitle) => {
-              setDeleteConfirmItem({ type: 'calendar_event', id, title, subtitle });
-            }}
-          />
-        )}
-
-        {/* ========================================================================= */}
-        {/* MEMBER: ATTENDANCE LOG & PERSONAL DASHBOARD */}
-        {/* ========================================================================= */}
-        {role === 'member' && memberTab === 'attendance' && (
-          <div className="space-y-6">
-            {/* Top Attendance Dashboard */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-sky-600" />
-                    <span>Personal Attendance Dashboard</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Official parade night & rehearsal log for {profile.rank} {profile.first_name} {profile.last_name}
-                  </p>
-                </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-semibold self-start sm:self-auto">
-                  <Award className="w-4 h-4 text-emerald-600" />
-                  <span>
-                    {attendanceStats.rate >= 80
-                      ? 'Exemplary Attendance Standing'
-                      : attendanceStats.rate >= 60
-                      ? 'Good Standing'
-                      : 'Attendance Review Needed'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Stat Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="p-4 rounded-xl bg-sky-50/70 border border-sky-100">
-                  <p className="text-[11px] font-semibold text-slate-500">Attendance Rate</p>
-                  <p className="text-2xl font-black text-sky-700 font-mono mt-0.5 tabular-nums">
-                    {attendanceStats.rate}%
-                  </p>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        attendanceStats.rate >= 80
-                          ? 'bg-emerald-500'
-                          : attendanceStats.rate >= 60
-                          ? 'bg-sky-500'
-                          : 'bg-rose-500'
-                      }`}
-                      style={{ width: `${Math.min(attendanceStats.rate, 100)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-500">Present (P)</p>
-                  <p className="text-2xl font-black text-emerald-700 font-mono mt-0.5 tabular-nums">
-                    {visibleAttendance.filter(r => r.status === 'Present').length}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-1">Full muster attendance</p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-500">Excused (AE)</p>
-                  <p className="text-2xl font-black text-sky-700 font-mono mt-0.5 tabular-nums">
-                    {visibleAttendance.filter(r => r.status === 'Absent Excused - AE').length}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-1">Authorized absence</p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-500">Late (L)</p>
-                  <p className="text-2xl font-black text-amber-600 font-mono mt-0.5 tabular-nums">
-                    {visibleAttendance.filter(r => r.status === 'Late').length}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-1">Late roll-call arrival</p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 col-span-2 sm:col-span-1">
-                  <p className="text-[11px] font-semibold text-slate-500">Absent (A)</p>
-                  <p className="text-2xl font-black text-rose-600 font-mono mt-0.5 tabular-nums">
-                    {visibleAttendance.filter(r => r.status === 'Absent').length}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-1">Unexcused missed night</p>
-                </div>
-              </div>
-
-              {/* Requirement banner */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-800">888 Avenger Squadron Standard:</span>
-                  <span>Minimum 60% rehearsal attendance required for band parade eligibility and annual music badge awards.</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMemberTab('absence')}
-                  className="font-semibold text-sky-600 hover:text-sky-700 whitespace-nowrap ml-2 underline"
-                >
-                  Submit AE Request &rarr;
-                </button>
-              </div>
-            </div>
-
-            {/* Attendance History Table */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold text-slate-900">
-                Personal Attendance History ({visibleAttendance.length} records)
-              </h3>
-
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                    <tr>
-                      <th className="px-5 py-3">Date</th>
-                      <th className="px-4 py-3">Scheduled Event</th>
-                      <th className="px-5 py-3 text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {visibleAttendance.map(rec => (
-                      <tr key={rec.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-3.5 font-mono font-medium text-slate-900">
-                          {rec.date}
-                        </td>
-                        <td className="px-4 py-3.5 text-slate-500">
-                          Wednesday Band Practice / Parade Night
-                        </td>
-                        <td className="px-5 py-3.5 text-right">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                              rec.status === 'Present'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : rec.status === 'Absent Excused - AE'
-                                ? 'bg-sky-50 text-sky-700 border border-sky-200'
-                                : rec.status === 'Late'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}
-                          >
-                            {rec.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* MEMBER: EXCUSED ABSENCE FORM */}
-        {/* ========================================================================= */}
-        {role === 'member' && memberTab === 'absence' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-sky-600" />
-                <span>Submit Excused Absence Request</span>
+        {role === 'admin' && adminTab === 'my-parts' && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h2 className="text-base font-bold text-slate-900">
+                My Assigned Parts ({myAssignedMusic.length})
               </h2>
-
-              {absenceSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  <span>Request submitted successfully to Band Officers.</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAbsenceSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Date of Absence *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={absenceDate}
-                    onChange={e => setAbsenceDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Reason for Absence *
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={absenceReason}
-                    onChange={e => setAbsenceReason(e.target.value)}
-                    placeholder="e.g. School exam, illness, or cadet marksmanship competition..."
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Submit Request</span>
-                </button>
-              </form>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
-              <h3 className="font-bold text-slate-900 text-sm">Submitted Requests ({visibleExcusedAbsences.length})</h3>
-              {visibleExcusedAbsences.length === 0 ? (
-                <p className="text-xs text-slate-400 py-8 text-center">No absence requests on record.</p>
-              ) : (
-                visibleExcusedAbsences.map(ea => (
-                  <div key={ea.id} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-slate-900">{ea.date_of_absence}</span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          ea.status === 'Approved'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : ea.status === 'Rejected'
-                            ? 'bg-rose-100 text-rose-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        {ea.status}
-                      </span>
+            {myAssignedMusic.length === 0 ? (
+              <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 text-slate-500">
+                <Music className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                <p className="text-sm font-semibold text-slate-700">No parts assigned yet</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Band officers can assign your parts here when ready.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {myAssignedMusic.map(item => (
+                  <div
+                    key={item.assignmentId}
+                    className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:border-sky-300 transition-colors flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-100">
+                          {item.instrumentPart}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">PDF Score</span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
+                      <p className="text-xs text-slate-500 italic mt-0.5">{item.composer}</p>
                     </div>
-                    <p className="text-slate-600">{ea.reason}</p>
+
+                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
+                      <button
+                        onClick={() => setActiveScore(item)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View PDF</span>
+                      </button>
+
+                      <a
+                        href={item.fileUrl}
+                        download={`${item.title}_${item.instrumentPart}.pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-slate-50 transition-colors"
+                        title="Download PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* MEMBER: MY PROFILE */}
-        {/* ========================================================================= */}
-        {role === 'member' && memberTab === 'profile' && (
-          <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <User className="w-4 h-4 text-sky-600" />
-                <span>Cadet Musician Profile</span>
-              </h2>
-              <span className="text-[11px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200 px-2.5 py-0.5 rounded-full">
-                Cadet Musician
-              </span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-100 text-[11px] text-sky-800 flex items-start gap-2">
-              <Lock className="w-3.5 h-3.5 text-sky-600 shrink-0 mt-0.5" />
-              <span>
-                Rank, instrument part, Cadet365 email, and contact phone records are officially administered by Band Officers and Band Seniors. If your rank, instrument, or phone number needs adjustment, please request an update with your Band Senior.
-              </span>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-500 mb-1">First Name (Official)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={profile.first_name}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 cursor-not-allowed font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block font-medium text-slate-500 mb-1">Last Name (Official)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={profile.last_name}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 cursor-not-allowed font-medium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-medium text-slate-500 mb-1">Cadet365 Email (Managed)</label>
-                <input
-                  type="email"
-                  disabled
-                  value={profile.cadet365_email}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-mono cursor-not-allowed"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-500 mb-1">Current Rank (Officer Assigned)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={profile.rank}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label className="block font-medium text-slate-500 mb-1">Assigned Instrument</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={profile.instrument}
-                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-medium cursor-not-allowed"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-medium text-slate-500 mb-1">
-                  Cadet / Parent Contact Phone Number (Locked)
-                </label>
-                <input
-                  type="tel"
-                  disabled
-                  value={profile.phone || 'No phone number registered'}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-mono cursor-not-allowed font-medium"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* ADMIN: MY PROFILE */}
-        {/* ========================================================================= */}
         {role === 'admin' && adminTab === 'profile' && (
           <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -1207,18 +916,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 type="submit"
                 className="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors shadow-sm"
               >
-                Save Officer Profile
+                Change Admin Profile
               </button>
             </form>
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* ADMIN: ROLL-CALL & EXCUSED ABSENCES */}
-        {/* ========================================================================= */}
         {role === 'admin' && adminTab === 'rollcall' && (
           <div className="space-y-6">
-            {/* Auto-Mark Alert */}
             {autoMarkAlert && (
               <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
                 <span>{autoMarkAlert}</span>
@@ -1226,7 +931,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               </div>
             )}
 
-            {/* Pending Absences Panel */}
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
@@ -1276,9 +980,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               )}
             </div>
 
-            {/* Attendance Roll Call Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
-              {/* Roll Call Controls */}
               <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
                 <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-xs font-semibold text-slate-600">Rehearsal Date:</label>
@@ -1305,7 +1007,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   </button>
                 </div>
 
-                {/* Sort Buttons for Roll Call */}
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 text-xs shadow-xs">
                   <span className="text-[11px] text-slate-500 font-medium px-1.5">Sort by:</span>
                   {(['rank', 'last_name', 'instrument'] as const).map(criterion => {
@@ -1340,7 +1041,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   <button
                     onClick={() => {
                       markAllPresentForDate(activeRehearsalDate);
-                      showSaveToast('Attendance Updated', `All cadets marked Present for ${activeRehearsalDate}.`);
+                      showSaveToast('Attendance Updated', `All personnel marked Present for ${activeRehearsalDate}.`);
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors"
                   >
@@ -1358,7 +1059,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
@@ -1399,7 +1099,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenAeModal(cadet)}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 hover:border-sky-300 transition-colors shadow-xs group"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 hover:text-sky-900 transition-colors"
                                   title="Click to view or edit AE reason / notes"
                                 >
                                   <span>Absent Excused - AE</span>
@@ -1464,9 +1164,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* ADMIN: SQUADRON CALENDAR & SCHEDULE */}
-        {/* ========================================================================= */}
         {role === 'admin' && adminTab === 'calendar' && (
           <SquadronCalendarView
             isAdmin={true}
@@ -1482,9 +1179,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           />
         )}
 
-        {/* ========================================================================= */}
-        {/* ADMIN: ROSTER */}
-        {/* ========================================================================= */}
         {role === 'admin' && adminTab === 'roster' && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1500,7 +1194,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   />
                 </div>
 
-                {/* Sort Buttons for Roster */}
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 text-xs shadow-xs">
                   <span className="text-[11px] text-slate-500 font-medium px-1.5">Sort by:</span>
                   {(['rank', 'last_name', 'instrument'] as const).map(criterion => {
@@ -1606,9 +1299,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* ADMIN: MUSIC & PARTS MANAGER */}
-        {/* ========================================================================= */}
         {role === 'admin' && adminTab === 'music' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1697,7 +1387,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         )}
       </main>
 
-      {/* Modals */}
       {activeScore && (
         <PdfViewerModal
           isOpen={Boolean(activeScore)}
@@ -1728,11 +1417,9 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         />
       )}
 
-      {/* Cadet Profile & Password Reset Modal (Admin) */}
       {selectedCadetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="relative w-full max-w-xl max-h-[90vh] bg-white border border-slate-200 rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 text-sky-700 flex items-center justify-center font-bold text-sm">
@@ -1755,7 +1442,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
               {cadetModalSuccess && (
                 <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
@@ -1764,7 +1450,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 </div>
               )}
 
-              {/* Password Reset Section */}
               <div className="p-4 rounded-xl bg-sky-50/70 border border-sky-100 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
@@ -1779,7 +1464,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   <button
                     type="button"
                     onClick={handleSendPasswordReset}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-sm transition-colors whitespace-nowrap self-start sm:self-auto"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-sm transition-colors whitespace-nowrap"
                   >
                     <Mail className="w-3.5 h-3.5" />
                     <span>Send Password Reset Email</span>
@@ -1823,7 +1508,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 )}
               </div>
 
-              {/* Admin Record Editing Form */}
               <form onSubmit={handleSaveCadetModal} className="space-y-4">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                   <h4 className="font-bold text-slate-900 text-xs">
@@ -1962,9 +1646,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* DELETE CONFIRMATION MODAL (IN-APP) */}
-      {/* ========================================================================= */}
       {deleteConfirmItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
@@ -2007,19 +1688,13 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* DELETE TOAST NOTIFICATION */}
-      {/* ========================================================================= */}
       {deleteToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-800 flex items-center gap-3 text-xs animate-in slide-in-from-bottom-2">
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-800 flex items-center gap-3 text-xs animate-in slide-in-from-bottom-3">
           <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{deleteToast}</span>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* AE VIEW / EDIT MODAL FOR ADMINS */}
-      {/* ========================================================================= */}
       {aeModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
@@ -2067,7 +1742,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 />
               </div>
 
-              {/* Quick Preset Tags */}
               <div className="space-y-1">
                 <p className="text-[11px] text-slate-500 font-medium">Quick suggestions / templates:</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -2112,9 +1786,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* GLOBAL SAVE SUCCESS TOAST / POP-UP */}
-      {/* ========================================================================= */}
       {saveToast && (
         <div className="fixed top-5 right-5 z-50 bg-white border border-emerald-200 shadow-2xl rounded-2xl p-4 max-w-sm flex items-start gap-3 animate-in slide-in-from-top-3">
           <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
