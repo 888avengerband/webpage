@@ -44,7 +44,7 @@ export const MemberDashboard: React.FC = () => {
 
   // Profile Edit form state
   const [editRank, setEditRank] = useState(profile?.rank || 'Cdt');
-  const [editInstrument, setEditInstrument] = useState(profile?.instrument || 'Clarinet 1');
+  const [editInstrument, setEditInstrument] = useState(profile?.instrument || 'Clarinet');
   const [editPhone, setEditPhone] = useState(profile?.phone || '');
   const [profileSavedMessage, setProfileSavedMessage] = useState(false);
 
