@@ -86,7 +86,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="name@cadets.gc.ca"
+                placeholder="name@cdt.cadets.gc.ca"
                 className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 font-mono"
               />
             </div>
@@ -121,7 +121,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 flex items-start gap-2">
           <ShieldAlert className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
           <span>
-            New cadet profiles and music locker access are provisioned by Band Officers and Band Seniors. If you require an account, please contact your Band Senior.
+            New cadet logins are provisioned by Band Officers and Band Seniors. If you require an account, please contact your chain of command.
           </span>
         </div>
 
