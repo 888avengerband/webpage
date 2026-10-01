@@ -93,22 +93,21 @@ export const AdminDashboard: React.FC = () => {
   // ROSTER LOGIC
   // ---------------------------------------------------------------------------
   const rankPriority: Record<CadetRank, number> = {
-    Maj: 16,
-    Capt: 15,
-    Lt: 14,
-    '2Lt': 13,
-    OCdt: 12,
-    Officer: 11,
-    WO1: 10,
-    WO2: 9,
-    FSgt: 8,
-    Sgt: 7,
-    FCpl: 6,
-    Cpl: 5,
-    LAC: 4,
-    Cdt: 3,
-    CI: 2,
-    CV: 1,
+    'Maj': 15,
+    'Capt': 14,
+    'Lt': 13,
+    '2Lt': 12,
+    'OCdt': 11,
+    'CI': 10,
+    'CV': 9,
+    'WO1': 8,
+    'WO2': 7,
+    'FSgt': 6,
+    'Sgt': 5,
+    'FCpl': 4,
+    'Cpl': 3,
+    'LAC': 2,
+    'Cdt': 1,
   };
 
   const sortedProfiles = useMemo(() => {
