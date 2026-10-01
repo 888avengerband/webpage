@@ -40,14 +40,14 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
 
   // Add Event Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [title, setTitle] = useState('Wednesday Band Rehearsal');
+  const [title, setTitle] = useState('Band Practice');
   const [eventType, setEventType] = useState<EventType>('rehearsal');
   const [date, setDate] = useState('2026-10-21');
   const [startTime, setStartTime] = useState('18:30');
   const [endTime, setEndTime] = useState('21:00');
-  const [location, setLocation] = useState('Bessborough Armoury - Band Room');
-  const [dressCode, setDressCode] = useState('Band Polo / Squadron Civvies & Instrument');
-  const [notes, setNotes] = useState('Full ensemble warm-up, march-past accompaniment, sectional drill.');
+  const [location, setLocation] = useState('Walter Moberly Elementary Gym');
+  const [dressCode, setDressCode] = useState(Appropriate Civilian Clothing');
+  const [notes, setNotes] = useState('N/A');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Month navigation helpers
@@ -91,37 +91,37 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
   // Quick preset application for the Add Event Form
   const applyPreset = (preset: 'band' | 'parade' | 'clinic' | 'acr') => {
     if (preset === 'band') {
-      setTitle('Wednesday Band Rehearsal');
+      setTitle('Band Practice');
       setEventType('rehearsal');
       setStartTime('18:30');
       setEndTime('21:00');
-      setLocation('Bessborough Armoury - Band Room');
-      setDressCode('Band Polo / Civvies & Instrument');
-      setNotes('Full band rehearsal 18:30-21:00. Bring tuner, pencil, and music folder.');
+      setLocation('Walter Moberly Elementary Gym');
+      setDressCode('Appropriate Civilian Clothing');
+      setNotes('N/A');
     } else if (preset === 'parade') {
-      setTitle('Friday Squadron Parade Night');
+      setTitle('Squadron Parade Night');
       setEventType('parade');
       setStartTime('18:30');
       setEndTime('21:15');
-      setLocation('Main Drill Hall & Parade Square');
-      setDressCode('C2 Routine Duty Uniform (Polished Boots)');
-      setNotes('Squadron parade 18:30-21:15. Band performs march-on, general salute, and march-off.');
+      setLocation('Walter Moberly Elementary Gym');
+      setDressCode('C1 Full Dress Uniform / C5 Field Training Uniform');
+      setNotes('N/A');
     } else if (preset === 'clinic') {
       setTitle('Regional Cadet Band Clinic');
       setEventType('clinic');
       setStartTime('09:00');
       setEndTime('16:00');
-      setLocation('Seaforth Armoury (Vancouver)');
-      setDressCode('Band Polo & Squadron Tunics');
-      setNotes('Masterclass with guest military directors and sectional instruction.');
+      setLocation('Seaforth Armoury Hoffmeister Building');
+      setDressCode('Appropriate Civilian Clothing');
+      setNotes('N/A');
     } else if (preset === 'acr') {
       setTitle('Annual Ceremonial Review (ACR)');
       setEventType('performance');
       setStartTime('13:00');
       setEndTime('17:00');
-      setLocation('Main Parade Square');
-      setDressCode('C1 Full Ceremonial (Medals, White Belts)');
-      setNotes('Squadron Annual Inspection & Final Parade. Full band accompaniment.');
+      setLocation('Seaforth Armoury Hoffmeister Building');
+      setDressCode('C1 Full Dress Uniform');
+      setNotes('Squadron Annual Inspection & Final Parade.');
     }
   };
 
@@ -244,7 +244,7 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
             <div>
               <span className="font-bold text-slate-800 block">Location:</span>
-              <span className="text-slate-600 text-[11px] truncate">Bessborough Armoury / Parade Square</span>
+              <span className="text-slate-600 text-[11px] truncate">Walter Moberly Elementary School Gym</span>
             </div>
           </div>
         </div>
