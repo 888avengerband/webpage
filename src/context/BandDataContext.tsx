@@ -65,6 +65,7 @@ interface BandDataContextType {
   visibleAttendance: AttendanceRecord[];
   markAttendance: (profileId: string, date: string, status: AttendanceStatus) => Promise<boolean>;
   markAllPresentForDate: (date: string) => Promise<boolean>;
+  clearAttendanceForDate: (date: string) => Promise<boolean>;
   getCadetAttendanceStats: (profileId: string) => {
     total: number;
     present: number;
@@ -543,13 +544,54 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     return true;
   };
-  // Attendance Operations
+   // Attendance Operations
   const markAttendance = async (
     profileId: string,
     date: string,
     status: AttendanceStatus
   ): Promise<boolean> => {
     if (!isAdmin) return false;
+
+    const supabase = getSupabaseClient();
+
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { data, error } = await supabase
+        .from('attendance')
+        .upsert(
+          [
+            {
+              profile_id: profileId,
+              date,
+              status,
+              marked_by: profile?.id || null,
+            },
+          ],
+          { onConflict: 'profile_id,date' }
+        )
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error('Failed to save attendance:', error);
+        return false;
+      }
+
+      setAttendanceRecords(prev => {
+        const existingIndex = prev.findIndex(
+          r => r.profile_id === profileId && r.date === date
+        );
+
+        if (existingIndex >= 0) {
+          const copy = [...prev];
+          copy[existingIndex] = data as AttendanceRecord;
+          return copy;
+        }
+
+        return [data as AttendanceRecord, ...prev];
+      });
+
+      return true;
+    }
 
     setAttendanceRecords(prev => {
       const existingIndex = prev.findIndex(
@@ -564,17 +606,18 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           marked_by: profile?.id || null,
         };
         return copy;
-      } else {
-        const newRecord: AttendanceRecord = {
-          id: `att-${Date.now().toString(36)}-${profileId.slice(-3)}`,
-          profile_id: profileId,
-          date,
-          status,
-          marked_by: profile?.id || null,
-          created_at: new Date().toISOString(),
-        };
-        return [newRecord, ...prev];
       }
+
+      const newRecord: AttendanceRecord = {
+        id: `att-${Date.now().toString(36)}-${profileId.slice(-3)}`,
+        profile_id: profileId,
+        date,
+        status,
+        marked_by: profile?.id || null,
+        created_at: new Date().toISOString(),
+      };
+
+      return [newRecord, ...prev];
     });
 
     return true;
@@ -583,36 +626,52 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const markAllPresentForDate = async (date: string): Promise<boolean> => {
     if (!isAdmin) return false;
 
-    setAttendanceRecords(prev => {
-      // Include both admins and members in roll call
-      const allPersonnel = profiles.filter(p => p.role === 'admin' || p.role === 'member');
-      const updated = [...prev];
+    const allPersonnel = profiles.filter(
+      p => p.role === 'admin' || p.role === 'member'
+    );
 
-      allPersonnel.forEach(person => {
-        const idx = updated.findIndex(r => r.profile_id === person.id && r.date === date);
-        if (idx >= 0) {
-          // If already marked as AE, keep it; otherwise mark Present
-          if (updated[idx].status !== 'Absent Excused - AE') {
-            updated[idx] = {
-              ...updated[idx],
-              status: 'Present',
-              marked_by: profile?.id || null,
-            };
-          }
-        } else {
-          updated.push({
-            id: `att-${Date.now().toString(36)}-${person.id.slice(-3)}`,
-            profile_id: person.id,
-            date,
-            status: 'Present',
-            marked_by: profile?.id || null,
-            created_at: new Date().toISOString(),
-          });
-        }
-      });
+    for (const person of allPersonnel) {
+      const existing = attendanceRecords.find(
+        r => r.profile_id === person.id && r.date === date
+      );
 
-      return updated;
-    });
+      if (existing?.status === 'Absent Excused - AE') {
+        continue;
+      }
+
+      const success = await markAttendance(person.id, date, 'Present');
+
+      if (!success) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const clearAttendanceForDate = async (date: string): Promise<boolean> => {
+    if (!isAdmin) return false;
+
+    const supabase = getSupabaseClient();
+
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('date', date)
+        .neq('status', 'Absent Excused - AE');
+
+      if (error) {
+        console.error('Failed to clear attendance:', error);
+        return false;
+      }
+    }
+
+    setAttendanceRecords(prev =>
+      prev.filter(
+        r => r.date !== date || r.status === 'Absent Excused - AE'
+      )
+    );
 
     return true;
   };
