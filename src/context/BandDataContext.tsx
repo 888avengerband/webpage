@@ -130,38 +130,61 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Sync Supabase profiles into the state on mount
+  // Sync Supabase profiles and calendar events into state on mount
   useEffect(() => {
-    const syncSupabaseProfiles = async () => {
+    const syncSupabaseData = async () => {
       const supabase = getSupabaseClient();
+
       if (supabase && isSupabaseConfigured() && isLiveSupabase) {
         try {
-          const { data, error } = await supabase.from('profiles').select('*');
-          if (error) {
-            console.warn('Supabase profile fetch warning:', error);
-            return;
-          }
-          if (data && data.length > 0) {
-            // Merge Supabase profiles with local profiles, preferring Supabase
+          // Sync profiles
+          const { data: profileData, error: profileError } =
+            await supabase.from('profiles').select('*');
+
+          if (profileError) {
+            console.warn('Supabase profile fetch warning:', profileError);
+          } else if (profileData && profileData.length > 0) {
             setProfiles(prev => {
               const merged = [...prev];
-              data.forEach((supabaseProfile: Profile) => {
-                const existingIdx = merged.findIndex(p => p.id === supabaseProfile.id);
+
+              profileData.forEach((supabaseProfile: Profile) => {
+                const existingIdx = merged.findIndex(
+                  p => p.id === supabaseProfile.id
+                );
+
                 if (existingIdx >= 0) {
                   merged[existingIdx] = supabaseProfile;
                 } else {
                   merged.unshift(supabaseProfile);
                 }
               });
+
               return normalizeProfilesList(merged);
             });
           }
+
+          // Sync calendar events
+          const { data: calendarData, error: calendarError } =
+            await supabase
+              .from('calendar_events')
+              .select('*')
+              .order('date', { ascending: true });
+
+          if (calendarError) {
+            console.warn(
+              'Supabase calendar fetch warning:',
+              calendarError
+            );
+          } else if (calendarData) {
+            setCalendarEvents(calendarData as CalendarEvent[]);
+          }
         } catch (err) {
-          console.warn('Supabase profile sync error:', err);
+          console.warn('Supabase data sync error:', err);
         }
       }
     };
-    syncSupabaseProfiles();
+
+    syncSupabaseData();
   }, [isLiveSupabase]);
 
   // Persist state updates to local store
