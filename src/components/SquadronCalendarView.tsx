@@ -34,15 +34,16 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
   // Filter state
   const [filterType, setFilterType] = useState<string>('all');
   
-  // Month navigation: default to 2026-10 (October 2026, aligned with current squadron schedule)
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(9); // 0-indexed: 9 = October
+ // Month navigation: default to the current month
+const today = new Date();
+const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
+const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
 
   // Add Event Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [title, setTitle] = useState('Band Practice');
   const [eventType, setEventType] = useState<EventType>('rehearsal');
-  const [date, setDate] = useState('2026-10-21');
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));;
   const [startTime, setStartTime] = useState('18:30');
   const [endTime, setEndTime] = useState('21:00');
   const [location, setLocation] = useState('Walter Moberly Elementary Gym');
@@ -294,9 +295,10 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setCurrentYear(2026);
-                  setCurrentMonth(9);
-                }}
+                 const today = new Date();
+                setCurrentYear(today.getFullYear());
+              setCurrentMonth(today.getMonth());
+            }}
                 className="px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 rounded-md"
               >
                 Today
