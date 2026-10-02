@@ -457,28 +457,69 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const addCalendarEvent = async (
     eventData: Omit<CalendarEvent, 'id' | 'created_at'>
   ): Promise<boolean> => {
+    const supabase = getSupabaseClient();
+
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .insert([eventData])
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error('Failed to save calendar event:', error);
+        return false;
+      }
+
+      setCalendarEvents(prev =>
+        [data as CalendarEvent, ...prev].sort((a, b) =>
+          a.date.localeCompare(b.date)
+        )
+      );
+
+      return true;
+    }
+
     const newEvt: CalendarEvent = {
       ...eventData,
       id: `evt-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
       created_at: new Date().toISOString(),
     };
+
     setCalendarEvents(prev => {
-      const next = [newEvt, ...prev].sort((a, b) => a.date.localeCompare(b.date));
+      const next = [newEvt, ...prev].sort((a, b) =>
+        a.date.localeCompare(b.date)
+      );
       saveToStorage('calendar_events', next);
       return next;
     });
+
     return true;
   };
 
   const deleteCalendarEvent = async (id: string): Promise<boolean> => {
+    const supabase = getSupabaseClient();
+
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { error } = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Failed to delete calendar event:', error);
+        return false;
+      }
+    }
+
     setCalendarEvents(prev => {
       const next = prev.filter(e => e.id !== id);
       saveToStorage('calendar_events', next);
       return next;
     });
+
     return true;
   };
-
   // Attendance Operations
   const markAttendance = async (
     profileId: string,
