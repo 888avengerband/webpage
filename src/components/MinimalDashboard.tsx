@@ -1036,28 +1036,50 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   })}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      markAllPresentForDate(activeRehearsalDate);
-                      showSaveToast('Attendance Updated', `All personnel marked Present for ${activeRehearsalDate}.`);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Mark All Present</span>
-                  </button>
+            <div className="flex items-center gap-2">
+  <button
+    onClick={() => {
+      markAllPresentForDate(activeRehearsalDate);
+      showSaveToast(
+        'Attendance Updated',
+        `All personnel marked Present for ${activeRehearsalDate}.`
+      );
+    }}
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors"
+  >
+    <Check className="w-3.5 h-3.5" />
+    <span>Mark All Present</span>
+  </button>
 
-                  <button
-                    onClick={handleExportCsv}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors"
-                  >
-                    <Download className="w-3.5 h-3.5 text-sky-600" />
-                    <span>Export CSV</span>
-                  </button>
-                </div>
-              </div>
+  <button
+    onClick={async () => {
+      const success = await clearAttendanceForDate(activeRehearsalDate);
 
+      if (success) {
+        showSaveToast(
+          'Attendance Cleared',
+          `Present, Late, and Absent records cleared for ${activeRehearsalDate}. AE records were kept.`
+        );
+      } else {
+        showSaveToast(
+          'Attendance Error',
+          'Attendance could not be cleared.'
+        );
+      }
+    }}
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-sm transition-colors"
+  >
+    <span>Clear Attendance</span>
+  </button>
+
+  <button
+    onClick={handleExportCsv}
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors"
+  >
+    <Download className="w-3.5 h-3.5 text-sky-600" />
+    <span>Export CSV</span>
+  </button>
+</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
