@@ -1507,6 +1507,169 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 )}
               </div>
 
+              {/* Cadet Attendance Summary */}
+{selectedCadetModal && (() => {
+  const cadetAttendanceStats = getCadetAttendanceStats(selectedCadetModal.id);
+  const cadetAttendanceRecords = attendanceRecords
+    .filter(r => r.profile_id === selectedCadetModal.id)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return (
+    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-bold text-slate-900 text-xs">
+            Attendance
+          </h4>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            Complete attendance record for this cadet.
+          </p>
+        </div>
+
+        <div className="text-right">
+          <div className="text-lg font-bold text-sky-700">
+            {cadetAttendanceStats.rate}%
+          </div>
+          <div className="text-[10px] text-slate-500">
+            Attendance Rate
+          </div>
+        </div>
+      </div>
+
+      {/* Attendance Totals */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="p-2.5 bg-white rounded-lg border border-slate-200 text-center">
+          <div className="text-sm font-bold text-slate-900">
+            {cadetAttendanceStats.total}
+          </div>
+          <div className="text-[10px] text-slate-500">
+            Total
+          </div>
+        </div>
+
+        <div className="p-2.5 bg-white rounded-lg border border-emerald-200 text-center">
+          <div className="text-sm font-bold text-emerald-700">
+            {cadetAttendanceStats.present}
+          </div>
+          <div className="text-[10px] text-slate-500">
+            P — Present
+          </div>
+        </div>
+
+        <div className="p-2.5 bg-white rounded-lg border border-amber-200 text-center">
+          <div className="text-sm font-bold text-amber-700">
+            {cadetAttendanceStats.late}
+          </div>
+          <div className="text-[10px] text-slate-500">
+            L — Late
+          </div>
+        </div>
+
+        <div className="p-2.5 bg-white rounded-lg border border-red-200 text-center">
+          <div className="text-sm font-bold text-red-700">
+            {cadetAttendanceStats.absent}
+          </div>
+          <div className="text-[10px] text-slate-500">
+            A — Absent
+          </div>
+        </div>
+
+        <div className="p-2.5 bg-white rounded-lg border border-sky-200 text-center">
+          <div className="text-sm font-bold text-sky-700">
+            {cadetAttendanceStats.excused}
+          </div>
+          <div className="text-[10px] text-slate-500">
+            AE — Excused
+          </div>
+        </div>
+      </div>
+
+      {/* Day-by-Day Attendance Log */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="font-semibold text-slate-800 text-xs">
+            Day-by-Day Log
+          </h5>
+          <span className="text-[10px] text-slate-400">
+            {cadetAttendanceRecords.length} recorded
+          </span>
+        </div>
+
+        {cadetAttendanceRecords.length === 0 ? (
+          <div className="p-4 bg-white rounded-lg border border-slate-200 text-center text-[11px] text-slate-500">
+            No attendance records have been logged for this cadet.
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+            {cadetAttendanceRecords.map(record => {
+              const statusConfig = {
+                'Present': {
+                  label: 'P',
+                  text: 'Present',
+                  className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                },
+                'Late': {
+                  label: 'L',
+                  text: 'Late',
+                  className: 'bg-amber-50 text-amber-700 border-amber-200',
+                },
+                'Absent': {
+                  label: 'A',
+                  text: 'Absent',
+                  className: 'bg-red-50 text-red-700 border-red-200',
+                },
+                'Absent Excused - AE': {
+                  label: 'AE',
+                  text: 'Absent Excused',
+                  className: 'bg-sky-50 text-sky-700 border-sky-200',
+                },
+              }[record.status];
+
+              return (
+                <div
+                  key={record.id}
+                  className="flex items-center justify-between px-3 py-2.5"
+                >
+                  <div>
+                    <div className="font-medium text-slate-800 text-[11px]">
+                      {new Date(`${record.date}T00:00:00`).toLocaleDateString(
+                        'en-CA',
+                        {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        }
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Attendance Record
+                    </div>
+                  </div>
+
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold ${
+                      statusConfig?.className ||
+                      'bg-slate-50 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    <span>{statusConfig?.label || record.status}</span>
+                    {statusConfig?.text && (
+                      <span className="font-medium">
+                        {statusConfig.text}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+})()}
+              
               <form onSubmit={handleSaveCadetModal} className="space-y-4">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                   <h4 className="font-bold text-slate-900 text-xs">
