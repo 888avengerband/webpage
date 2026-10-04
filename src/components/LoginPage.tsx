@@ -19,12 +19,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onBackToSplash,
   onLoginSuccess,
 }) => {
-  const { signIn } = useAuth();
+  const { signIn, sendPasswordResetEmail } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +38,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       onLoginSuccess();
     } else {
       setError(res.error || 'Invalid credentials.');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError(null);
+    setResetSent(false);
+
+    if (!email.trim()) {
+      setError('Enter your account email first.');
+      return;
+    }
+
+    setLoading(true);
+    const res = await sendPasswordResetEmail(email);
+    setLoading(false);
+
+    if (res.success) {
+      setResetSent(true);
+    } else {
+      setError(res.message);
     }
   };
 
@@ -106,6 +127,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               />
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={loading}
+            className="w-full text-xs font-semibold text-sky-600 hover:text-sky-700 disabled:opacity-50"
+          >
+            Forgot password?
+          </button>
+
+          {resetSent && (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+              Password reset instructions were sent to <strong>{email}</strong>.
+            </div>
+          )}
 
           <button
             type="submit"
