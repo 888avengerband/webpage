@@ -72,12 +72,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     switchProfile,
     updateCurrentProfile,
     sendPasswordResetEmail,
+    changePassword,
     deleteProfile,
   } = useAuth();
   const {
     profiles,
     updateMember,
     deleteMember,
+    resetMemberPassword,
     sheetMusic,
     songParts,
     partAssignments,
@@ -155,6 +157,10 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const [cadetModalSuccess, setCadetModalSuccess] = useState<string | null>(null);
   const [resetEmailStatus, setResetEmailStatus] = useState<{ message: string; link?: string } | null>(null);
   const [copiedResetLink, setCopiedResetLink] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   // Admin Profile Edit State
   const [adminRank, setAdminRank] = useState<CadetRank>(profile?.rank || 'Capt');
@@ -316,6 +322,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     setCadetModalSuccess(null);
     setResetEmailStatus(null);
     setCopiedResetLink(false);
+    setPasswordMessage('');
   };
 
   const handleSaveCadetModal = async (e: React.FormEvent) => {
@@ -364,10 +371,37 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const handleSendPasswordReset = async () => {
     if (!selectedCadetModal) return;
     const res = await sendPasswordResetEmail(selectedCadetModal.cadet365_email);
-    setResetEmailStatus({
-      message: res.message,
-      link: res.resetLink,
-    });
+    setResetEmailStatus({ message: res.message, link: res.resetLink });
+  };
+
+  const handleAdminPasswordReset = async () => {
+    if (!selectedCadetModal) return;
+    const password = window.prompt('Enter the default password you want to assign to this member (minimum 8 characters):');
+    if (!password) return;
+    const res = await resetMemberPassword(selectedCadetModal.id, password);
+    setResetEmailStatus({ message: res.success ? 'Password reset successfully. Give the member the password you entered.' : (res.error || 'Password reset failed.'), link: '' });
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage('');
+    if (newPassword.length < 8) {
+      setPasswordMessage('Password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage('Passwords do not match.');
+      return;
+    }
+    const res = await changePassword(newPassword);
+    if (!res.success) {
+      setPasswordMessage(res.error || 'Unable to change password.');
+      return;
+    }
+    setNewPassword('');
+    setConfirmPassword('');
+    setChangePasswordOpen(false);
+    setPasswordMessage('Password changed successfully.');
   };
 
   const handleCopyResetLink = (link: string) => {
@@ -1495,6 +1529,10 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     <Mail className="w-3.5 h-3.5" />
                     <span>Send Password Reset Email</span>
                   </button>
+                  <button type="button" onClick={handleAdminPasswordReset} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs shadow-sm transition-colors whitespace-nowrap">
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Set Default Password</span>
+                  </button>
                 </div>
 
                 {resetEmailStatus && (
@@ -1832,6 +1870,24 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               </form>
             </div>
           </div>
+        </div>
+      )}
+
+      {changePasswordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <form onSubmit={handleChangePassword} className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-sky-600" />
+              <h3 className="font-bold text-slate-900">Change Password</h3>
+            </div>
+            <input type="password" minLength={8} required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="w-full px-3 py-2 border border-slate-300 rounded-xl" />
+            <input type="password" minLength={8} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full px-3 py-2 border border-slate-300 rounded-xl" />
+            {passwordMessage && <p className="text-xs text-slate-600">{passwordMessage}</p>}
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setChangePasswordOpen(false)} className="px-4 py-2 text-xs font-semibold text-slate-600">Cancel</button>
+              <button type="submit" className="px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold">Change Password</button>
+            </div>
+          </form>
         </div>
       )}
 
