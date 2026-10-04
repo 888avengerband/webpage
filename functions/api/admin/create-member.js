@@ -7,7 +7,9 @@ const json = (body, status = 200) =>
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+  const supabaseUrl = supabaseUrl || env.VITE_SUPABASE_URL;
+
+  if (!supabaseUrl || !env.SUPABASE_SERVICE_ROLE_KEY) {
     return json(
       { error: 'Server Supabase credentials are not configured.' },
       500
@@ -47,7 +49,7 @@ export async function onRequestPost(context) {
   };
 
   // Verify the caller's Supabase session.
-  const callerResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+  const callerResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
       Authorization: authorization,
@@ -62,7 +64,7 @@ export async function onRequestPost(context) {
 
   // Only an existing admin profile may create another portal account.
   const callerProfileResponse = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=id,role&limit=1`,
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=id,role&limit=1`,
     { headers: serviceHeaders }
   );
 
@@ -80,7 +82,7 @@ export async function onRequestPost(context) {
   const temporaryPassword = `${crypto.randomUUID()}A9!`;
 
   const authResponse = await fetch(
-    `${env.SUPABASE_URL}/auth/v1/admin/users`,
+    `${supabaseUrl}/auth/v1/admin/users`,
     {
       method: 'POST',
       headers: serviceHeaders,
@@ -122,7 +124,7 @@ export async function onRequestPost(context) {
   };
 
   const profileResponse = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/profiles`,
+    `${supabaseUrl}/rest/v1/profiles`,
     {
       method: 'POST',
       headers: {
@@ -138,7 +140,7 @@ export async function onRequestPost(context) {
   if (!profileResponse.ok) {
     // Roll back the Auth account if the profile row could not be created.
     await fetch(
-      `${env.SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(authResult.id)}`,
+      `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authResult.id)}`,
       {
         method: 'DELETE',
         headers: serviceHeaders,
