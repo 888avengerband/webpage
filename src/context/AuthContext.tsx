@@ -16,6 +16,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateCurrentProfile: (updates: Partial<Profile>) => Promise<boolean>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; message: string; resetLink: string }>;
+  changePassword: (password: string) => Promise<{ success: boolean; error?: string }>;
   switchProfile: (profileId: string) => void;
   deleteProfile: (profileId: string) => void;
   availableProfiles: Profile[];
@@ -302,6 +303,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const changePassword = async (password: string): Promise<{ success: boolean; error?: string }> => {
+    const supabase = getSupabaseClient();
+    if (!supabase || !isSupabaseConfigured()) return { success: false, error: 'Supabase is not configured.' };
+    if (password.length < 8) return { success: false, error: 'Password must be at least 8 characters.' };
+    const { error } = await supabase.auth.updateUser({ password });
+    return error ? { success: false, error: error.message } : { success: true };
+  };
+
   const deleteProfile = (profileId: string) => {
     setProfiles(prev => {
       const next = prev.filter(p => p.id !== profileId);
@@ -331,6 +340,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         updateCurrentProfile,
         sendPasswordResetEmail,
+        changePassword,
         switchProfile,
         deleteProfile,
         availableProfiles: profiles,
