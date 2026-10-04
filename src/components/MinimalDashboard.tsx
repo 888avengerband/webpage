@@ -215,8 +215,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   // Notification for Auto-Mark AE
   const [autoMarkAlert, setAutoMarkAlert] = useState<string | null>(null);
 
-  if (!profile) return null;
-
   const attendanceStats = getCadetAttendanceStats(profile.id);
   const attendanceMap = getAttendanceForDate(activeRehearsalDate);
   const pendingAbsences = excusedAbsences.filter(ea => ea.status === 'Pending');
@@ -284,6 +282,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     });
     return list;
   }, [profiles, rosterSearch, rosterSortKey, rosterSortDir]);
+
+  if (!profile) return null;
 
   const handleMemberProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
