@@ -34,7 +34,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
       setIsResettingPassword(true);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Keep the recovery hash intact so Supabase can establish the recovery session.
     }
   }, []);
 
