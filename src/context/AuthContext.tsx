@@ -262,26 +262,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email: string
   ): Promise<{ success: boolean; message: string; resetLink: string }> => {
     const supabase = getSupabaseClient();
-    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
-      try {
-        await supabase.auth.resetPasswordForEmail(email);
-      } catch (err) {
-        console.warn('Supabase password reset warning:', err);
-      }
-    }
-    const token = Math.random().toString(36).substring(2, 12);
-    const resetLink = `https://888aircadets.ca/auth/reset?email=${encodeURIComponent(email)}&token=${token}`;
-    return {
-      success: true,
-      message: `Password reset instructions sent to ${email}`,
-      resetLink,
-    };
-  };
 
-  const switchProfile = (profileId: string) => {
-    const target = profiles.find(p => p.id === profileId);
-    if (target) {
-      setActiveProfileId(target.id);
+    if (!supabase || !isSupabaseConfigured()) {
+      return {
+        success: false,
+        message: 'Supabase is not configured.',
+        resetLink: '',
+      };
+    }
+
+    try {
+      const redirectTo =
+        typeof window !== 'undefined' ? window.location.origin : undefined;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        redirectTo ? { redirectTo } : undefined
+      );
+
+      if (error) {
+        return {
+          success: false,
+          message: error.message,
+          resetLink: '',
+        };
+      }
+
+      return {
+        success: true,
+        message: `Password reset instructions were sent to ${email.trim().toLowerCase()}.`,
+        resetLink: '',
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err?.message || 'Unable to send password reset email.',
+        resetLink: '',
+      };
     }
   };
 
