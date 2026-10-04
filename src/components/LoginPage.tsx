@@ -13,13 +13,11 @@ import { SquadronCrest } from './SquadronCrest';
 interface LoginPageProps {
   onBackToSplash: () => void;
   onLoginSuccess: () => void;
-  onForgotPassword: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onBackToSplash,
   onLoginSuccess,
-  onForgotPassword,
 }) => {
   const { signIn } = useAuth();
 
@@ -111,14 +109,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onForgotPassword}
-            disabled={loading}
-            className="w-full text-xs font-semibold text-sky-600 hover:text-sky-700 disabled:opacity-50"
-          >
-            Forgot password?
-          </button>
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <span>
+              Forgot your password? Please reach out to a Band Senior or Officer for assistance.
+            </span>
+          </div>
 
           <button
             type="submit"
