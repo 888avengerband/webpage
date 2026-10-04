@@ -48,7 +48,6 @@ const MainAppContent: React.FC = () => {
         <LoginPage
           onBackToSplash={() => navigate('/')}
           onLoginSuccess={() => navigate('/home')}
-          onForgotPassword={() => navigate('/forgot-password')}
         />
       )}
 
