@@ -1286,7 +1286,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               </div>
 
               <button
-                onClick={() => setIsAddMemberOpen(true)}
+                onClick={() => { setSaveToast(null); setIsAddMemberOpen(true); }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-sm transition-colors self-start sm:self-auto"
               >
                 <Plus className="w-4 h-4" />
