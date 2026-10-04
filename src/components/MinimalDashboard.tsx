@@ -1521,14 +1521,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                       Send password reset instructions directly to their Cadet365 address.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleSendPasswordReset}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-sm transition-colors whitespace-nowrap"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Send Password Reset Email</span>
-                  </button>
                   <button type="button" onClick={handleAdminPasswordReset} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs shadow-sm transition-colors whitespace-nowrap">
                     <KeyRound className="w-3.5 h-3.5" />
                     <span>Set Default Password</span>
