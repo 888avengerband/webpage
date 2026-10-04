@@ -1156,8 +1156,12 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                                 return (
                                   <button
                                     key={st}
-                                    onClick={() => {
-                                      markAttendance(cadet.id, activeRehearsalDate, st);
+                                    onClick={async () => {
+                                      const success = await markAttendance(cadet.id, activeRehearsalDate, st);
+                                      if (!success) {
+                                        showSaveToast('Attendance Error', 'Attendance could not be saved. Check the Supabase permissions or console error.');
+                                        return;
+                                      }
                                       if (st === 'Absent Excused - AE') {
                                         handleOpenAeModal(cadet);
                                       } else {
