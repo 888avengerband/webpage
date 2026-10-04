@@ -690,7 +690,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('attendance')
         .delete()
         .eq('date', date)
-        .neq('status', 'Absent Excused - AE');
+        .in('status', ['Present', 'Late', 'Absent']);
 
       if (error) {
         console.error('Failed to clear attendance:', error);
