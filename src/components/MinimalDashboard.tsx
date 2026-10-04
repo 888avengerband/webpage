@@ -1035,8 +1035,9 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     );
                   })}
                 </div>
+                </div>
 
-            <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
   <button
     onClick={() => {
       markAllPresentForDate(activeRehearsalDate);
@@ -1080,6 +1081,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     <span>Export CSV</span>
   </button>
 </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
