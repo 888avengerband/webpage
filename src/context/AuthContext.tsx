@@ -311,6 +311,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return error ? { success: false, error: error.message } : { success: true };
   };
 
+  const switchProfile = (profileId: string) => {
+    const target = profiles.find(p => p.id === profileId);
+    if (!target) return;
+    setActiveProfileId(profileId);
+  };
+
   const deleteProfile = (profileId: string) => {
     setProfiles(prev => {
       const next = prev.filter(p => p.id !== profileId);
