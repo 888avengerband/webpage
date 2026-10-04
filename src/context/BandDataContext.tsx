@@ -291,6 +291,62 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return { success: false, error: 'Unauthorized: Admin role required to register members.' };
     }
 
+    const supabase = getSupabaseClient();
+
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError || !sessionData.session) {
+          return { success: false, error: 'Your Supabase session has expired. Please sign in again.' };
+        }
+
+        const response = await fetch('/api/admin/create-member', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.profile) {
+          return {
+            success: false,
+            error: result.error || 'The Supabase Auth account/profile could not be created.',
+          };
+        }
+
+        const newProfile = result.profile as Profile;
+        setProfiles(prev => [newProfile, ...prev.filter(p => p.id !== newProfile.id)]);
+        setActiveProfileId(newProfile.id);
+
+        // Send the new member a real Supabase password-reset email so they
+        // establish their own password instead of receiving a temporary one.
+        try {
+          const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+            newProfile.cadet365_email,
+            { redirectTo: window.location.origin }
+          );
+
+          if (resetError) {
+            console.warn('New member password-reset email warning:', resetError);
+          }
+        } catch (resetError) {
+          console.warn('New member password-reset email warning:', resetError);
+        }
+
+        return { success: true };
+      } catch (err: any) {
+        return {
+          success: false,
+          error: err?.message || 'Failed to create the Supabase Auth account.',
+        };
+      }
+    }
+
     const newId = `u-${Date.now().toString(36)}`;
     const newProfile: Profile = {
       ...data,
@@ -299,17 +355,6 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     setProfiles(prev => [newProfile, ...prev]);
-
-    // Live Supabase sync if enabled
-    const supabase = getSupabaseClient();
-    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
-      try {
-        await supabase.from('profiles').insert([newProfile]);
-      } catch (err: any) {
-        console.warn('Supabase profile sync warning:', err);
-      }
-    }
-
     return { success: true };
   };
 
