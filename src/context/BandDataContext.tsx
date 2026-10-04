@@ -321,7 +321,6 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         const newProfile = result.profile as Profile;
         setProfiles(prev => [newProfile, ...prev.filter(p => p.id !== newProfile.id)]);
-        setActiveProfileId(newProfile.id);
 
         // Send the new member a real Supabase password-reset email so they
         // establish their own password instead of receiving a temporary one.
