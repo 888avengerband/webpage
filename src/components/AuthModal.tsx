@@ -14,7 +14,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   defaultMode = 'signin',
 }) => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, sendPasswordResetEmail } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
@@ -26,6 +26,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [role, setRole] = useState<UserRole>('member');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -35,6 +37,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
 
     if (mode === 'signin') {
+      if (isForgotPassword) {
+        if (!email.trim()) {
+          setError('Enter your email address first.');
+          setLoading(false);
+          return;
+        }
+
+        const res = await sendPasswordResetEmail(email);
+        setLoading(false);
+
+        if (res.success) {
+          setError(null);
+          setResetMessage(res.message);
+        } else {
+          setError(res.message);
+        }
+        return;
+      }
+
       const res = await signIn(email, password);
       setLoading(false);
       if (res.success) {
@@ -208,13 +229,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
           </div>
 
+          {mode === 'signin' && resetMessage && (
+            <div className="p-3 rounded-lg bg-emerald-950/50 border border-emerald-800 text-xs text-emerald-300">
+              {resetMessage}
+            </div>
+          )}
+
+          {mode === 'signin' && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsForgotPassword(value => !value);
+                setError(null);
+                setResetMessage(null);
+              }}
+              className="w-full text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors"
+            >
+              {isForgotPassword ? 'Back to sign in' : 'Forgot password?'}
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full py-2.5 px-4 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
           >
             {mode === 'signin' ? <LogIn className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
-            <span>{loading ? 'Authenticating...' : mode === 'signin' ? 'Sign In to Portal' : 'Register Account'}</span>
+            <span>{loading ? 'Processing...' : isForgotPassword ? 'Send Reset Email' : mode === 'signin' ? 'Sign In to Portal' : 'Register Account'}</span>
           </button>
         </form>
 
