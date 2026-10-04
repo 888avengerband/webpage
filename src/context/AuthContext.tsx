@@ -273,7 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const redirectTo =
-        typeof window !== 'undefined' ? window.location.origin : undefined;
+        typeof window !== 'undefined' ? `${window.location.origin}/forgot-password` : undefined;
 
       const { error } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
