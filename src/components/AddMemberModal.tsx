@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, UserPlus, Shield, Music, Phone, Mail, Award } from 'lucide-react';
+import { X, UserPlus, Shield, Music, Phone, Mail, Award, XCircle } from 'lucide-react';
 import { CadetRank, CADET_RANKS, STANDARD_INSTRUMENTS, UserRole } from '../types/database';
 import { useBandData } from '../context/BandDataContext';
 
@@ -89,8 +89,12 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
-              {error}
+            <div
+              role="alert"
+              className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2"
+            >
+              <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
