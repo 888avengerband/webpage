@@ -13,19 +13,20 @@ import { SquadronCrest } from './SquadronCrest';
 interface LoginPageProps {
   onBackToSplash: () => void;
   onLoginSuccess: () => void;
+  onForgotPassword: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onBackToSplash,
   onLoginSuccess,
+  onForgotPassword,
 }) => {
-  const { signIn, sendPasswordResetEmail } = useAuth();
+  const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,25 +42,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
-  const handleForgotPassword = async () => {
-    setError(null);
-    setResetSent(false);
 
-    if (!email.trim()) {
-      setError('Enter your account email first.');
-      return;
-    }
-
-    setLoading(true);
-    const res = await sendPasswordResetEmail(email);
-    setLoading(false);
-
-    if (res.success) {
-      setResetSent(true);
-    } else {
-      setError(res.message);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-sky-50/50 flex flex-col justify-between p-4 sm:p-6 font-body">
@@ -130,18 +113,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
           <button
             type="button"
-            onClick={handleForgotPassword}
+            onClick={onForgotPassword}
             disabled={loading}
             className="w-full text-xs font-semibold text-sky-600 hover:text-sky-700 disabled:opacity-50"
           >
             Forgot password?
           </button>
-
-          {resetSent && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
-              Password reset instructions were sent to <strong>{email}</strong>.
-            </div>
-          )}
 
           <button
             type="submit"
