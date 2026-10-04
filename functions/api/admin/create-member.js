@@ -7,7 +7,7 @@ const json = (body, status = 200) =>
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  const supabaseUrl = supabaseUrl || env.VITE_SUPABASE_URL;
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
 
   if (!supabaseUrl || !env.SUPABASE_SERVICE_ROLE_KEY) {
     return json(
