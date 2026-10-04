@@ -32,6 +32,7 @@ interface BandDataContextType {
   addMember: (data: Omit<Profile, 'id' | 'created_at'>) => Promise<{ success: boolean; error?: string }>;
   updateMember: (id: string, updates: Partial<Profile>) => Promise<boolean>;
   deleteMember: (id: string) => Promise<boolean>;
+  resetMemberPassword: (id: string, password: string) => Promise<{ success: boolean; error?: string }>;
 
   // Calendar & Schedule
   calendarEvents: CalendarEvent[];
@@ -322,21 +323,6 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const newProfile = result.profile as Profile;
         setProfiles(prev => [newProfile, ...prev.filter(p => p.id !== newProfile.id)]);
 
-        // Send the new member a real Supabase password-reset email so they
-        // establish their own password instead of receiving a temporary one.
-        try {
-          const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-            newProfile.cadet365_email,
-            { redirectTo: window.location.origin }
-          );
-
-          if (resetError) {
-            console.warn('New member password-reset email warning:', resetError);
-          }
-        } catch (resetError) {
-          console.warn('New member password-reset email warning:', resetError);
-        }
-
         return { success: true };
       } catch (err: any) {
         return {
@@ -373,6 +359,26 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     }
     return true;
+  };
+
+  const resetMemberPassword = async (id: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!isAdmin) return { success: false, error: 'Unauthorized: Admin role required.' };
+    if (password.length < 8) return { success: false, error: 'Password must be at least 8 characters.' };
+    const supabase = getSupabaseClient();
+    if (!supabase || !isSupabaseConfigured() || !isLiveSupabase) return { success: false, error: 'Supabase is not connected.' };
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) return { success: false, error: 'Your Supabase session has expired. Please sign in again.' };
+      const response = await fetch('/api/admin/reset-member-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session.access_token}` },
+        body: JSON.stringify({ user_id: id, new_password: password }),
+      });
+      const result = await response.json().catch(() => ({}));
+      return response.ok ? { success: true } : { success: false, error: result.error || 'Password reset failed.' };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Password reset failed.' };
+    }
   };
 
   const deleteMember = async (id: string): Promise<boolean> => {
@@ -885,6 +891,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addMember,
         updateMember,
         deleteMember,
+        resetMemberPassword,
         sheetMusic,
         songParts,
         partAssignments,
