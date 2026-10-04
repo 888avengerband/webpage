@@ -164,6 +164,20 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             });
           }
 
+          // Sync attendance records
+          const { data: attendanceData, error: attendanceError } =
+            await supabase
+              .from('attendance')
+              .select('*')
+              .order('date', { ascending: false });
+
+          if (attendanceError) {
+            console.warn('Supabase attendance fetch warning:', attendanceError);
+          } else if (attendanceData) {
+            setAttendanceRecords(attendanceData as AttendanceRecord[]);
+          }
+
+
           // Sync calendar events
           const { data: calendarData, error: calendarError } =
             await supabase
@@ -496,11 +510,8 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       setCalendarEvents(prev =>
-        [data as CalendarEvent, ...prev].sort((a, b) =>
-          a.date.localeCompare(b.date)
-        )
+        [data as CalendarEvent, ...prev].sort((a, b) => a.date.localeCompare(b.date))
       );
-
       return true;
     }
 
@@ -510,17 +521,11 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       created_at: new Date().toISOString(),
     };
 
-    setCalendarEvents(prev => {
-      const next = [newEvt, ...prev].sort((a, b) =>
-        a.date.localeCompare(b.date)
-      );
-      saveToStorage('calendar_events', next);
-      return next;
-    });
-
+    setCalendarEvents(prev => [newEvt, ...prev].sort((a, b) => a.date.localeCompare(b.date)));
     return true;
   };
 
+  const deleteCalendarEvent = async (id: string): Promise<boolean> => {
   const deleteCalendarEvent = async (id: string): Promise<boolean> => {
     const supabase = getSupabaseClient();
 
@@ -555,39 +560,66 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const supabase = getSupabaseClient();
 
     if (supabase && isSupabaseConfigured() && isLiveSupabase) {
-      const { data, error } = await supabase
+      // Avoid relying on a database-specific unique constraint for upsert.
+      const { data: existing, error: findError } = await supabase
         .from('attendance')
-        .upsert(
-          [
-            {
-              profile_id: profileId,
-              date,
-              status,
-              marked_by: profile?.id || null,
-            },
-          ],
-          { onConflict: 'profile_id,date' }
-        )
-        .select()
-        .single();
+        .select('*')
+        .eq('profile_id', profileId)
+        .eq('date', date)
+        .maybeSingle();
 
-      if (error || !data) {
-        console.error('Failed to save attendance:', error);
+      if (findError) {
+        console.error('Failed to find attendance record:', findError);
         return false;
       }
 
+      let data: AttendanceRecord | null = null;
+
+      if (existing) {
+        const { data: updated, error } = await supabase
+          .from('attendance')
+          .update({
+            status,
+            marked_by: profile?.id || null,
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error || !updated) {
+          console.error('Failed to update attendance:', error);
+          return false;
+        }
+        data = updated as AttendanceRecord;
+      } else {
+        const { data: inserted, error } = await supabase
+          .from('attendance')
+          .insert([{
+            profile_id: profileId,
+            date,
+            status,
+            marked_by: profile?.id || null,
+          }])
+          .select()
+          .single();
+
+        if (error || !inserted) {
+          console.error('Failed to insert attendance:', error);
+          return false;
+        }
+        data = inserted as AttendanceRecord;
+      }
+
       setAttendanceRecords(prev => {
-        const existingIndex = prev.findIndex(
+        const index = prev.findIndex(
           r => r.profile_id === profileId && r.date === date
         );
-
-        if (existingIndex >= 0) {
+        if (index >= 0) {
           const copy = [...prev];
-          copy[existingIndex] = data as AttendanceRecord;
+          copy[index] = data!;
           return copy;
         }
-
-        return [data as AttendanceRecord, ...prev];
+        return [data!, ...prev];
       });
 
       return true;
@@ -623,6 +655,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return true;
   };
 
+  const markAllPresentForDate = async (date: string): Promise<boolean> =>
   const markAllPresentForDate = async (date: string): Promise<boolean> => {
     if (!isAdmin) return false;
 
