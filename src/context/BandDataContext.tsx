@@ -526,7 +526,6 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const deleteCalendarEvent = async (id: string): Promise<boolean> => {
-  const deleteCalendarEvent = async (id: string): Promise<boolean> => {
     const supabase = getSupabaseClient();
 
     if (supabase && isSupabaseConfigured() && isLiveSupabase) {
@@ -655,7 +654,6 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return true;
   };
 
-  const markAllPresentForDate = async (date: string): Promise<boolean> =>
   const markAllPresentForDate = async (date: string): Promise<boolean> => {
     if (!isAdmin) return false;
 
