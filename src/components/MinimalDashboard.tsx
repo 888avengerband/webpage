@@ -215,8 +215,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   // Notification for Auto-Mark AE
   const [autoMarkAlert, setAutoMarkAlert] = useState<string | null>(null);
 
-  const attendanceStats = getCadetAttendanceStats(profile.id);
-  const attendanceMap = getAttendanceForDate(activeRehearsalDate);
+  const attendanceStats = profile ? getCadetAttendanceStats(profile.id) : null;
+  const attendanceMap = profile ? getAttendanceForDate(activeRehearsalDate) : {};
   const pendingAbsences = excusedAbsences.filter(ea => ea.status === 'Pending');
 
   // Filtered music for member
