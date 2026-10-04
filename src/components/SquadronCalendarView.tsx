@@ -130,7 +130,7 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
     e.preventDefault();
     if (!title.trim() || !date) return;
     setIsSubmitting(true);
-    await onAddEvent({
+    const success = await onAddEvent({
       title: title.trim(),
       event_type: eventType,
       date,
@@ -141,6 +141,10 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
       notes: notes.trim() || undefined,
     });
     setIsSubmitting(false);
+    if (!success) {
+      window.alert('Could not save this calendar event. Check the Supabase permissions and browser console for the database error.');
+      return;
+    }
     setIsAddOpen(false);
   };
 
