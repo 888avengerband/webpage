@@ -17,7 +17,7 @@ const normalizePath = (path: string): AppRoute => {
 };
 
 const MainAppContent: React.FC = () => {
-  const { profile, isLoading } = useAuth();
+  const { profile, isLoading, signOut } = useAuth();
 
   // App flow: splash -> login -> minimal dashboard
   const [route, setRoute] = useState<AppRoute>(() => normalizePath(window.location.pathname));
@@ -58,7 +58,7 @@ const MainAppContent: React.FC = () => {
       {/* 3. Very Minimal Dashboard */}
       {route === '/home' && profile && (
         <MinimalDashboard
-          onLogout={() => navigate('/login')}
+          onLogout={async () => { await signOut(); navigate('/'); }}
           onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
         />
       )}
