@@ -1014,7 +1014,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center gap-2.5 bg-slate-50/50">
                 <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-xs font-semibold text-slate-600">Rehearsal Date:</label>
                   <select
@@ -1040,7 +1040,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   </button>
                 </div>
 
-                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 text-xs shadow-xs">
+                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 text-xs shadow-xs">
                   <span className="text-[11px] text-slate-500 font-medium px-1.5">Sort by:</span>
                   {(['rank', 'last_name', 'instrument'] as const).map(criterion => {
                     const active = rollCallSortKey === criterion;
@@ -1069,52 +1069,54 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     );
                   })}
                 </div>
+
+                <div className="flex items-center gap-2 flex-wrap ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markAllPresentForDate(activeRehearsalDate);
+                      showSaveToast(
+                        'Attendance Updated',
+                        `All personnel marked Present for ${activeRehearsalDate}.`
+                      );
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors whitespace-nowrap"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Mark All Present</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const success = await clearAttendanceForDate(activeRehearsalDate);
+
+                      if (success) {
+                        showSaveToast(
+                          'Attendance Cleared',
+                          `Present, Late, and Absent records cleared for ${activeRehearsalDate}. AE records were kept.`
+                        );
+                      } else {
+                        showSaveToast(
+                          'Attendance Error',
+                          'Attendance could not be cleared.'
+                        );
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-sm transition-colors whitespace-nowrap"
+                  >
+                    <span>Clear Attendance</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportCsv}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors whitespace-nowrap"
+                  >
+                    <Download className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Export CSV</span>
+                  </button>
                 </div>
-
-                <div className="flex items-center gap-2">
-  <button
-    onClick={() => {
-      markAllPresentForDate(activeRehearsalDate);
-      showSaveToast(
-        'Attendance Updated',
-        `All personnel marked Present for ${activeRehearsalDate}.`
-      );
-    }}
-    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors"
-  >
-    <Check className="w-3.5 h-3.5" />
-    <span>Mark All Present</span>
-  </button>
-
-  <button
-    onClick={async () => {
-      const success = await clearAttendanceForDate(activeRehearsalDate);
-
-      if (success) {
-        showSaveToast(
-          'Attendance Cleared',
-          `Present, Late, and Absent records cleared for ${activeRehearsalDate}. AE records were kept.`
-        );
-      } else {
-        showSaveToast(
-          'Attendance Error',
-          'Attendance could not be cleared.'
-        );
-      }
-    }}
-    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-sm transition-colors"
-  >
-    <span>Clear Attendance</span>
-  </button>
-
-  <button
-    onClick={handleExportCsv}
-    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors"
-  >
-    <Download className="w-3.5 h-3.5 text-sky-600" />
-    <span>Export CSV</span>
-  </button>
-</div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
