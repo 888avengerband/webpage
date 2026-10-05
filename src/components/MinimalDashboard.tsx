@@ -1224,7 +1224,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 </table>
               </div>
             </div>
-            )}
+          </div>
+        )}
 
         {role === 'admin' && adminTab === 'calendar' && (
           <SquadronCalendarView
