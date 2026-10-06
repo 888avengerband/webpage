@@ -91,6 +91,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     attendanceRecords,
     markAttendance,
     markAllPresentForDate,
+    clearAttendanceForDate,
     getAttendanceForDate,
     activeRehearsalDate,
     setActiveRehearsalDate,
