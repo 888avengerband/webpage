@@ -145,24 +145,12 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           if (profileError) {
             console.warn('Supabase profile fetch warning:', profileError);
-          } else if (profileData && profileData.length > 0) {
-            setProfiles(prev => {
-              const merged = [...prev];
-
-              profileData.forEach((supabaseProfile: Profile) => {
-                const existingIdx = merged.findIndex(
-                  p => p.id === supabaseProfile.id
-                );
-
-                if (existingIdx >= 0) {
-                  merged[existingIdx] = supabaseProfile;
-                } else {
-                  merged.unshift(supabaseProfile);
-                }
-              });
-
-              return normalizeProfilesList(merged);
-            });
+          } else if (profileData) {
+            // In live Supabase mode, Supabase is the authoritative roster.
+            // Do not merge old local/mock profiles into the live roster.
+            // This prevents stale generated IDs such as "u-..." from
+            // appearing beside the real UUID-backed Supabase profile.
+            setProfiles(normalizeProfilesList(profileData as Profile[]));
           }
 
           // Sync attendance records
@@ -905,6 +893,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         visibleAttendance,
         markAttendance,
         markAllPresentForDate,
+        clearAttendanceForDate,
         getCadetAttendanceStats,
         getAttendanceForDate,
         excusedAbsences,
