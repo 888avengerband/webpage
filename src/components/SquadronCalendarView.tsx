@@ -6,6 +6,7 @@ import {
   Tag,
   Plus,
   Trash2,
+  Pencil,
   CheckSquare,
   Download,
   ChevronLeft,
@@ -20,6 +21,7 @@ interface SquadronCalendarViewProps {
   isAdmin: boolean;
   calendarEvents: CalendarEvent[];
   onAddEvent: (eventData: Omit<CalendarEvent, 'id' | 'created_at'>) => Promise<boolean>;
+  onUpdateEvent: (id: string, eventData: Partial<Omit<CalendarEvent, 'id' | 'created_at'>>) => Promise<boolean>;
   onDeleteEvent: (id: string, title: string, subtitle?: string) => void;
   onSelectRehearsalDate?: (date: string) => void;
 }
@@ -28,6 +30,7 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
   isAdmin,
   calendarEvents,
   onAddEvent,
+  onUpdateEvent,
   onDeleteEvent,
   onSelectRehearsalDate,
 }) => {
@@ -41,6 +44,7 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
 
   // Add Event Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [title, setTitle] = useState('Band Practice');
   const [eventType, setEventType] = useState<EventType>('rehearsal');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));;
@@ -126,11 +130,30 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
     }
   };
 
+  const openAddEvent = (eventDate?: string) => {
+    setEditingEventId(null);
+    if (eventDate) setDate(eventDate);
+    setIsAddOpen(true);
+  };
+
+  const openEditEvent = (event: CalendarEvent) => {
+    setEditingEventId(event.id);
+    setTitle(event.title);
+    setEventType(event.event_type);
+    setDate(event.date);
+    setStartTime(event.start_time);
+    setEndTime(event.end_time);
+    setLocation(event.location);
+    setDressCode(event.dress_code || '');
+    setNotes(event.notes || '');
+    setIsAddOpen(true);
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !date) return;
     setIsSubmitting(true);
-    const success = await onAddEvent({
+    const eventData = {
       title: title.trim(),
       event_type: eventType,
       date,
@@ -139,13 +162,17 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
       location: location.trim(),
       dress_code: dressCode.trim() || undefined,
       notes: notes.trim() || undefined,
-    });
+    };
+    const success = editingEventId
+      ? await onUpdateEvent(editingEventId, eventData)
+      : await onAddEvent(eventData);
     setIsSubmitting(false);
     if (!success) {
       window.alert('Could not save this calendar event. Check the Supabase permissions and browser console for the database error.');
       return;
     }
     setIsAddOpen(false);
+    setEditingEventId(null);
   };
 
   // iCal download generator
@@ -219,7 +246,7 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
             {isAdmin && (
               <button
                 type="button"
-                onClick={() => setIsAddOpen(true)}
+                onClick={() => openAddEvent()}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-sm transition-colors"
               >
                 <Plus className="w-4 h-4" />
@@ -350,7 +377,7 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
                   onClick={() => {
                     if (isAdmin) {
                       setDate(dateStr);
-                      setIsAddOpen(true);
+                      openAddEvent(dateStr);
                     }
                   }}
                   className={`h-11 rounded-xl p-1 flex flex-col items-center justify-between cursor-pointer border transition-all ${
@@ -497,6 +524,18 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
                       </button>
                     )}
 
+                    {/* Edit Event Button (Admin) */}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => openEditEvent(evt)}
+                        className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
+                        title="Edit calendar event"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
+
                     {/* Download iCal */}
                     <button
                       type="button"
@@ -545,10 +584,10 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
                 </div>
                 <div>
                   <h3 className="font-heading text-base font-bold text-slate-900">
-                    Add Rehearsal / Squadron Date
+                    {editingEventId ? 'Edit Rehearsal / Squadron Date' : 'Add Rehearsal / Squadron Date'}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Schedule band practices, parades, clinics, or performances
+                    {editingEventId ? 'Update the selected calendar event' : 'Schedule band practices, parades, clinics, or performances'}
                   </p>
                 </div>
               </div>
@@ -722,7 +761,7 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
                   disabled={isSubmitting}
                   className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition-colors shadow-sm disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Saving...' : 'Add Event to Calendar'}
+                  {isSubmitting ? 'Saving...' : editingEventId ? 'Save Event Changes' : 'Add Event to Calendar'}
                 </button>
               </div>
             </form>
