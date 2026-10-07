@@ -125,6 +125,8 @@ async function createMember(request, env) {
     );
   }
 
+  // The Supabase on_auth_user_created trigger already creates this profile.
+  // Update that row instead of inserting a second row with the same UUID.
   const profile = {
     id: authResult.id,
     first_name: String(first_name).trim(),
@@ -134,41 +136,40 @@ async function createMember(request, env) {
     instrument: instrument || 'Clarinet 1',
     role: role || 'member',
     phone: phone ? String(phone).trim() : null,
-    created_at: new Date().toISOString(),
   };
 
-  const profileResponse = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
-    method: 'POST',
-    headers: {
-      ...serviceHeaders,
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(profile),
-  });
+  const profileResponse = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(authResult.id)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        ...serviceHeaders,
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify(profile),
+    }
+  );
 
-  const profileResult = await profileResponse.json();
+  const profileResult = await profileResponse.json().catch(() => ({}));
 
-  if (!profileResponse.ok) {
+  if (!profileResponse.ok || !Array.isArray(profileResult) || !profileResult[0]) {
     await fetch(
       `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authResult.id)}`,
-      {
-        method: 'DELETE',
-        headers: serviceHeaders,
-      }
+      { method: 'DELETE', headers: serviceHeaders }
     );
 
     return json(
       {
         error:
-          profileResult.message ||
-          profileResult.msg ||
-          'Auth user was created, but the profile could not be saved.',
+          profileResult?.message ||
+          profileResult?.msg ||
+          'Auth user was created, but the profile could not be updated.',
       },
-      profileResponse.status || 400
+      profileResponse.status || 500
     );
   }
 
-  return json({ profile: profileResult[0] || profile }, 201);
+  return json({ profile: profileResult[0] }, 201);
 }
 
 async function resetMemberPassword(request, env) {
