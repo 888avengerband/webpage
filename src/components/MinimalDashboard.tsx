@@ -1853,7 +1853,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               </div>
 
               {/* Cadet Attendance Summary */}
-{selectedCadetModal && (() => {
+{selectedCadetModal && !isOfficerRank(selectedCadetModal.rank) && (() => {
   const cadetAttendanceStats = getCadetAttendanceStats(selectedCadetModal.id);
   const cadetAttendanceRecords = attendanceRecords
     .filter(r => r.profile_id === selectedCadetModal.id)
