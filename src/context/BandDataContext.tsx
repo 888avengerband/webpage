@@ -37,6 +37,7 @@ interface BandDataContextType {
   // Calendar & Schedule
   calendarEvents: CalendarEvent[];
   addCalendarEvent: (event: Omit<CalendarEvent, 'id' | 'created_at'>) => Promise<boolean>;
+  updateCalendarEvent: (id: string, updates: Partial<Omit<CalendarEvent, 'id' | 'created_at'>>) => Promise<boolean>;
   deleteCalendarEvent: (id: string) => Promise<boolean>;
 
   // Sheet Music & Parts
@@ -560,6 +561,43 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     setCalendarEvents(prev => [newEvt, ...prev].sort((a, b) => a.date.localeCompare(b.date)));
+    return true;
+  };
+
+  const updateCalendarEvent = async (
+    id: string,
+    updates: Partial<Omit<CalendarEvent, 'id' | 'created_at'>>
+  ): Promise<boolean> => {
+    const supabase = getSupabaseClient();
+
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error('Failed to update calendar event:', error);
+        return false;
+      }
+
+      setCalendarEvents(prev =>
+        prev
+          .map(event => event.id === id ? (data as CalendarEvent) : event)
+          .sort((a, b) => a.date.localeCompare(b.date))
+      );
+      return true;
+    }
+
+    setCalendarEvents(prev => {
+      const next = prev
+        .map(event => event.id === id ? { ...event, ...updates } : event)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      saveToStorage('calendar_events', next);
+      return next;
+    });
     return true;
   };
 
