@@ -227,7 +227,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   // Cadets for Attendance Roll Call: include admins as well as non-officer personnel
   const attendanceCadets = useMemo(() => {
-    let list = profiles.filter(p => p.role === 'admin' || !isOfficerRank(p.rank));
+    let list = profiles.filter(p => !isOfficerRank(p.rank));
     list.sort((a, b) => {
       if (rollCallSortKey === 'rank') {
         const wa = RANK_ORDER[a.rank] ?? 0;
