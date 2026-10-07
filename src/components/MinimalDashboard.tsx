@@ -768,6 +768,186 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           </div>
         )}
 
+        {role === 'member' && memberTab === 'calendar' && (
+          <SquadronCalendarView
+            isAdmin={false}
+            calendarEvents={calendarEvents}
+            onAddEvent={async () => false}
+            onDeleteEvent={() => {}}
+          />
+        )}
+
+        {role === 'member' && memberTab === 'attendance' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">My Attendance</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Your personal parade attendance history.</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Attendance Rate</p>
+                  <p className="text-2xl font-bold text-sky-600">{attendanceStats.rate}%</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-4">
+                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-center">
+                  <p className="text-[10px] text-slate-400">Total</p>
+                  <p className="text-lg font-bold text-slate-800">{attendanceStats.total}</p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-center">
+                  <p className="text-[10px] text-emerald-600">Present</p>
+                  <p className="text-lg font-bold text-emerald-700">{attendanceStats.present}</p>
+                </div>
+                <div className="rounded-xl bg-amber-50 border border-amber-100 p-3 text-center">
+                  <p className="text-[10px] text-amber-600">Late</p>
+                  <p className="text-lg font-bold text-amber-700">{attendanceStats.late}</p>
+                </div>
+                <div className="rounded-xl bg-sky-50 border border-sky-100 p-3 text-center">
+                  <p className="text-[10px] text-sky-600">Excused</p>
+                  <p className="text-lg font-bold text-sky-700">{attendanceStats.excused}</p>
+                </div>
+                <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 text-center col-span-2 sm:col-span-1">
+                  <p className="text-[10px] text-rose-600">Absent</p>
+                  <p className="text-lg font-bold text-rose-700">{attendanceStats.absent}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-700">
+                  Attendance History
+                </div>
+                {visibleAttendance.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500">
+                    No attendance records have been logged for you yet.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {visibleAttendance.map(record => {
+                      const statusConfig = {
+                        Present: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        Late: 'bg-amber-50 text-amber-700 border-amber-200',
+                        Absent: 'bg-rose-50 text-rose-700 border-rose-200',
+                        'Absent Excused - AE': 'bg-sky-50 text-sky-700 border-sky-200',
+                      }[record.status] || 'bg-slate-50 text-slate-600 border-slate-200';
+
+                      return (
+                        <div key={record.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold text-slate-800">{record.date}</p>
+                            <p className="text-[10px] text-slate-400">
+                              Logged {new Date(record.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold ${statusConfig}`}>
+                            {record.status}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {role === 'member' && memberTab === 'absence' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="pb-3 border-b border-slate-100 mb-4">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-sky-600" />
+                  <span>Submit Excused Absence</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Submit an absence request for Band Officers to review.
+                </p>
+              </div>
+
+              {absenceSuccess && (
+                <div className="p-3 mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>Absence request submitted successfully.</span>
+                </div>
+              )}
+
+              <form onSubmit={handleAbsenceSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Rehearsal / Parade Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={absenceDate}
+                    onChange={e => setAbsenceDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Reason for Absence *</label>
+                  <textarea
+                    rows={5}
+                    required
+                    value={absenceReason}
+                    onChange={e => setAbsenceReason(e.target.value)}
+                    placeholder="Explain why you will be absent..."
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Submit Absence Request
+                </button>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+              <div className="pb-3 border-b border-slate-100 mb-4">
+                <h2 className="text-base font-bold text-slate-900">My Absence Requests</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Current approval status of your requests.
+                </p>
+              </div>
+
+              {visibleExcusedAbsences.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500 border border-slate-200 rounded-xl">
+                  No absence requests submitted.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {visibleExcusedAbsences.map(req => {
+                    const statusClass =
+                      req.status === 'Approved'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : req.status === 'Rejected'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200';
+
+                    return (
+                      <div key={req.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-800">{req.date_of_absence}</span>
+                          <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${statusClass}`}>
+                            {req.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed">{req.reason}</p>
+                        <p className="text-[10px] text-slate-400">
+                          Submitted {new Date(req.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {role === 'admin' && adminTab === 'my-parts' && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
