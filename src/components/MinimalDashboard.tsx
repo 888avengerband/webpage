@@ -1144,13 +1144,20 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 <label className="block font-medium text-slate-700 mb-1">Account Email</label>
                 <input type="email" value={profile.cadet365_email} disabled className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 font-mono" />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Rank</label>
+                  <input type="text" value={profile.rank} disabled className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500" />
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Instrument</label>
+                  <input type="text" value={profile.instrument} disabled className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500" />
+                </div>
+              </div>
               <div>
                 <label className="block font-medium text-slate-700 mb-1">Phone Number</label>
-                <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="(604) 555-0100" className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500" />
+                <input type="tel" value={profile.phone || ''} disabled className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500" />
               </div>
-              <button type="submit" className="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors shadow-sm">
-                Save Profile
-              </button>
             </form>
 
             <div className="pt-4 border-t border-slate-100">
