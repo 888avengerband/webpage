@@ -1129,7 +1129,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleMemberProfileSave} className="space-y-4 text-xs">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
+  <Shield className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+  <span>
+    Need your profile information changed? Please speak with a Band Senior or Band Officer for assistance.
+  </span>
+</div>
+
+<form onSubmit={handleMemberProfileSave} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-medium text-slate-700 mb-1">First Name</label>
