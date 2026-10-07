@@ -47,7 +47,6 @@ import {
   isOfficerRank,
 } from '../types/database';
 import { SquadronCrest } from './SquadronCrest';
-import { PdfViewerModal } from './PdfViewerModal';
 import { AddMemberModal } from './AddMemberModal';
 import { UploadMusicModal } from './UploadMusicModal';
 import { AssignPartModal } from './AssignPartModal';
@@ -68,8 +67,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     profile,
     role,
     isAdmin,
-    availableProfiles,
-    switchProfile,
     updateCurrentProfile,
     sendPasswordResetEmail,
     changePassword,
@@ -140,7 +137,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   } | null>(null);
 
   // Modals state
-  const [activeScore, setActiveScore] = useState<CadetAssignedMusic | null>(null);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isUploadMusicOpen, setIsUploadMusicOpen] = useState(false);
   const [assigningPartData, setAssigningPartData] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
@@ -549,29 +545,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     </p>
                   </div>
 
-                  <div className="py-1">
-                    <p className="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Switch Cadet Account
-                    </p>
-                    {availableProfiles.slice(0, 4).map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          switchProfile(p.id);
-                          setIsProfileMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-left ${
-                          p.id === profile.id
-                            ? 'bg-sky-50 text-sky-800 font-semibold'
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span>{p.rank} {p.last_name} ({p.role})</span>
-                        {p.id === profile.id && <Check className="w-3.5 h-3.5 text-sky-600" />}
-                      </button>
-                    ))}
-                  </div>
-
                   <div className="pt-1 border-t border-slate-100">
                     <button
                       onClick={() => {
@@ -773,24 +746,16 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     </div>
 
                     <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
-                      <button
-                        onClick={() => setActiveScore(item)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>View PDF</span>
-                      </button>
-
                       <a
                         href={item.fileUrl}
-                        download={`${item.title}_${item.instrumentPart}.pdf`}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-slate-50 transition-colors"
-                        title="Download PDF"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
                       >
-                        <Download className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Open PDF</span>
                       </a>
+
                     </div>
                   </div>
                 ))}
@@ -834,24 +799,16 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     </div>
 
                     <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
-                      <button
-                        onClick={() => setActiveScore(item)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>View PDF</span>
-                      </button>
-
                       <a
                         href={item.fileUrl}
-                        download={`${item.title}_${item.instrumentPart}.pdf`}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-sky-600 hover:bg-slate-50 transition-colors"
-                        title="Download PDF"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
                       >
-                        <Download className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Open PDF</span>
                       </a>
+
                     </div>
                   </div>
                 ))}
@@ -1521,17 +1478,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         )}
       </main>
 
-      {activeScore && (
-        <PdfViewerModal
-          isOpen={Boolean(activeScore)}
-          onClose={() => setActiveScore(null)}
-          title={activeScore.title}
-          composer={activeScore.composer}
-          instrumentPart={activeScore.instrumentPart}
-          fileUrl={activeScore.fileUrl}
-        />
-      )}
-
       <AddMemberModal
         isOpen={isAddMemberOpen}
         onClose={() => setIsAddMemberOpen(false)}
@@ -1592,23 +1538,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   <p className="text-xs font-semibold text-slate-700">Part Preview</p>
                   <p className="text-[10px] text-slate-400">Open the uploaded PDF to see exactly what this part looks like.</p>
                 </div>
-                <button type="button" onClick={() => {
-                  const part = selectedPartDetails.part;
-                  const song = selectedPartDetails.song;
-                  setSelectedPartDetails(null);
-                  setActiveScore({
-                    assignmentId: 'admin-preview-' + part.id,
-                    partId: part.id,
-                    songId: song.id,
-                    title: song.title,
-                    composer: song.composer,
-                    instrumentPart: part.instrument_part,
-                    fileUrl: part.file_url,
-                    assignedAt: part.created_at,
-                  });
-                }} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold">
-                  <Eye className="w-3.5 h-3.5" /> View PDF
-                </button>
+                <a
+                  href={selectedPartDetails.part.file_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Open PDF
+                </a>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex justify-end">
