@@ -156,7 +156,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const [cadetModalPhone, setCadetModalPhone] = useState('');
   const [cadetModalRole, setCadetModalRole] = useState<UserRole>('member');
   const [cadetModalSuccess, setCadetModalSuccess] = useState<string | null>(null);
-  const [resetEmailStatus, setResetEmailStatus] = useState<{ message: string; link?: string } | null>(null);
+  const [resetEmailStatus, setResetEmailStatus] = useState<{ message: string; link?: string; success: boolean } | null>(null);
   const [copiedResetLink, setCopiedResetLink] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -373,7 +373,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const handleSendPasswordReset = async () => {
     if (!selectedCadetModal) return;
     const res = await sendPasswordResetEmail(selectedCadetModal.cadet365_email);
-    setResetEmailStatus({ message: res.message, link: res.resetLink });
+    setResetEmailStatus({ message: res.message, link: res.resetLink, success: true });
   };
 
   const handleAdminPasswordReset = async () => {
@@ -381,7 +381,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     const password = window.prompt('Enter the default password you want to assign to this member (minimum 8 characters):');
     if (!password) return;
     const res = await resetMemberPassword(selectedCadetModal.id, password);
-    setResetEmailStatus({ message: res.success ? 'Password reset successfully. Give the member the password you entered.' : (res.error || 'Password reset failed.'), link: '' });
+    setResetEmailStatus({ message: res.success ? 'Password reset successfully. Give the member the password you entered.' : (res.error || 'Password reset failed.'), link: '', success: res.success });
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -1600,9 +1600,9 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 </div>
 
                 {resetEmailStatus && (
-                  <div className="p-3 bg-white rounded-lg border border-sky-200 text-xs space-y-2">
-                    <div className="flex items-center gap-2 text-emerald-700 font-semibold">
-                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <div className={`p-3 bg-white rounded-lg border text-xs space-y-2 ${resetEmailStatus.success ? 'border-emerald-200' : 'border-rose-200'}`}>
+                    <div className={`flex items-center gap-2 font-semibold ${resetEmailStatus.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                      {resetEmailStatus.success ? <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> : <XCircle className="w-4 h-4 text-rose-600 shrink-0" />}
                       <span>{resetEmailStatus.message}</span>
                     </div>
                     {resetEmailStatus.link && (
