@@ -29,7 +29,7 @@ interface BandDataContextType {
   // Profiles / Roster
   profiles: Profile[];
   visibleProfiles: Profile[];
-  addMember: (data: Omit<Profile, 'id' | 'created_at'>) => Promise<{ success: boolean; error?: string }>;
+  addMember: (data: Omit<Profile, 'id' | 'created_at'> & { temporary_password?: string }) => Promise<{ success: boolean; error?: string }>;
   updateMember: (id: string, updates: Partial<Profile>) => Promise<boolean>;
   deleteMember: (id: string) => Promise<boolean>;
   resetMemberPassword: (id: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -274,7 +274,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Add Member
   const addMember = async (
-    data: Omit<Profile, 'id' | 'created_at'>
+    data: Omit<Profile, 'id' | 'created_at'> & { temporary_password?: string }
   ): Promise<{ success: boolean; error?: string }> => {
     if (!isAdmin) {
       return { success: false, error: 'Unauthorized: Admin role required to register members.' };
