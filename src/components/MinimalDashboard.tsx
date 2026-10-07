@@ -370,7 +370,11 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const handleSendPasswordReset = async () => {
     if (!selectedCadetModal) return;
     const res = await sendPasswordResetEmail(selectedCadetModal.cadet365_email);
-    setResetEmailStatus({ message: res.message, link: res.resetLink, success: true });
+    setResetEmailStatus({
+      message: res.message,
+      link: res.resetLink,
+      success: res.success,
+    });
   };
 
   const handleAdminPasswordReset = async () => {
