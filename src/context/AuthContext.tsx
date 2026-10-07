@@ -311,12 +311,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (password.length < 8) return { success: false, error: 'New password must be at least 8 characters.' };
     if (currentPassword === password) return { success: false, error: 'Your new password must be different from your current password.' };
 
-    // Re-authenticate first so changing a password always requires the existing password.
+    // Re-authenticate against the currently signed-in Supabase account.
+    // Do not rely on the local profile list, which can contain stale/mock records.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const sessionEmail = sessionData.session?.user?.email?.trim().toLowerCase();
+    const accountEmail = sessionEmail || activeProfile.cadet365_email.trim().toLowerCase();
+
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: activeProfile.cadet365_email,
+      email: accountEmail,
       password: currentPassword,
     });
-    if (authError) return { success: false, error: 'Current password is incorrect.' };
+    if (authError) {
+      return {
+        success: false,
+        error: authError.message === 'Invalid login credentials'
+          ? 'Current password is incorrect.'
+          : authError.message,
+      };
+    }
 
     const { error } = await supabase.auth.updateUser({ password });
     return error ? { success: false, error: error.message } : { success: true };
