@@ -34,6 +34,7 @@ async function createMember(request, env) {
     instrument,
     role,
     phone,
+    temporary_password,
   } = body || {};
 
   if (!first_name || !last_name || !cadet365_email) {
@@ -76,7 +77,11 @@ async function createMember(request, env) {
     return json({ error: 'Unauthorized: Admin role required.' }, 403);
   }
 
-  const temporaryPassword = `${crypto.randomUUID()}A9!`;
+  const temporaryPassword = String(temporary_password || '');
+
+  if (temporaryPassword.length < 8) {
+    return json({ error: 'An initial password of at least 8 characters is required.' }, 400);
+  }
 
   const authResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
     method: 'POST',
@@ -92,6 +97,7 @@ async function createMember(request, env) {
         instrument: instrument || 'Clarinet 1',
         role: role || 'member',
         phone: phone || null,
+        must_change_password: true,
       },
     }),
   });
