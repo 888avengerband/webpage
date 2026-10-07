@@ -159,6 +159,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const [resetEmailStatus, setResetEmailStatus] = useState<{ message: string; link?: string } | null>(null);
   const [copiedResetLink, setCopiedResetLink] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
@@ -386,19 +387,24 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordMessage('');
+    if (!currentPassword) {
+      setPasswordMessage('Enter your current password.');
+      return;
+    }
     if (newPassword.length < 8) {
-      setPasswordMessage('Password must be at least 8 characters.');
+      setPasswordMessage('New password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
       setPasswordMessage('Passwords do not match.');
       return;
     }
-    const res = await changePassword(newPassword);
+    const res = await changePassword(currentPassword, newPassword);
     if (!res.success) {
       setPasswordMessage(res.error || 'Unable to change password.');
       return;
     }
+    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setChangePasswordOpen(false);
@@ -952,7 +958,69 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               >
                 Change Admin Profile
               </button>
+
+              <button
+                type="button"
+                onClick={() => { setPasswordMessage(''); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setChangePasswordOpen(true); }}
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" />
+                Change Password
+              </button>
             </form>
+          </div>
+        )}
+
+        {role === 'member' && memberTab === 'profile' && (
+          <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <User className="w-4 h-4 text-sky-600" />
+                <span>My Profile</span>
+              </h2>
+            </div>
+
+            {profileSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Profile saved successfully!</span>
+              </div>
+            )}
+
+            <form onSubmit={handleMemberProfileSave} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">First Name</label>
+                  <input type="text" value={profile.first_name} disabled className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500" />
+                </div>
+                <div>
+                  <label className="block font-medium text-slate-700 mb-1">Last Name</label>
+                  <input type="text" value={profile.last_name} disabled className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">Account Email</label>
+                <input type="email" value={profile.cadet365_email} disabled className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 font-mono" />
+              </div>
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">Phone Number</label>
+                <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="(604) 555-0100" className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500" />
+              </div>
+              <button type="submit" className="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors shadow-sm">
+                Save Profile
+              </button>
+            </form>
+
+            <div className="pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => { setPasswordMessage(''); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setChangePasswordOpen(true); }}
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" />
+                Change Password
+              </button>
+            </div>
           </div>
         )}
 
@@ -1876,11 +1944,13 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               <Lock className="w-5 h-5 text-sky-600" />
               <h3 className="font-bold text-slate-900">Change Password</h3>
             </div>
-            <input type="password" minLength={8} required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" className="w-full px-3 py-2 border border-slate-300 rounded-xl" />
+            <p className="text-[11px] text-slate-500">Enter your current password to verify your account before choosing a new one.</p>
+            <input type="password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Current password" autoComplete="current-password" className="w-full px-3 py-2 border border-slate-300 rounded-xl" />
+            <input type="password" minLength={8} required value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" autoComplete="new-password" className="w-full px-3 py-2 border border-slate-300 rounded-xl" />
             <input type="password" minLength={8} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full px-3 py-2 border border-slate-300 rounded-xl" />
             {passwordMessage && <p className="text-xs text-slate-600">{passwordMessage}</p>}
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setChangePasswordOpen(false)} className="px-4 py-2 text-xs font-semibold text-slate-600">Cancel</button>
+              <button type="button" onClick={() => { setChangePasswordOpen(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setPasswordMessage(''); }} className="px-4 py-2 text-xs font-semibold text-slate-600">Cancel</button>
               <button type="submit" className="px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold">Change Password</button>
             </div>
           </form>
