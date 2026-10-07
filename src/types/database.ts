@@ -17,7 +17,7 @@ export type CadetRank =
   | 'Capt'
   | 'Maj'
 
-export const OFFICER_RANKS: CadetRank[] = ['OCdt', '2Lt', 'Lt', 'Capt', 'Maj'];
+export const OFFICER_RANKS: CadetRank[] = ['CV', 'CI', 'OCdt', '2Lt', 'Lt', 'Capt', 'Maj'];
 
 export const isOfficerRank = (rank: string): boolean => {
   return OFFICER_RANKS.includes(rank as CadetRank);
