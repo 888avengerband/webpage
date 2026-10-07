@@ -102,6 +102,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     upsertExcusedAbsence,
     calendarEvents,
     addCalendarEvent,
+    updateCalendarEvent,
     deleteCalendarEvent,
   } = useBandData();
 
@@ -773,6 +774,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             isAdmin={false}
             calendarEvents={calendarEvents}
             onAddEvent={async () => false}
+            onUpdateEvent={async () => false}
             onDeleteEvent={() => {}}
           />
         )}
@@ -1457,6 +1459,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             isAdmin={true}
             calendarEvents={calendarEvents}
             onAddEvent={addCalendarEvent}
+            onUpdateEvent={updateCalendarEvent}
             onDeleteEvent={(id, title, subtitle) => {
               setDeleteConfirmItem({ type: 'calendar_event', id, title, subtitle });
             }}
