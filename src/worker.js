@@ -8,8 +8,17 @@ async function createMember(request, env) {
   const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
 
   if (!supabaseUrl || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    const missing = [
+      !supabaseUrl ? 'SUPABASE_URL' : null,
+      !env.SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' : null,
+    ].filter(Boolean);
+
     return json(
-      { error: 'Server Supabase credentials are not configured.' },
+      {
+        error: 'Server Supabase credentials are not configured.',
+        missing,
+        hint: 'These must be configured as runtime Worker bindings, not Workers Build variables.',
+      },
       500
     );
   }
@@ -165,7 +174,19 @@ async function createMember(request, env) {
 async function resetMemberPassword(request, env) {
   const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
   if (!supabaseUrl || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    return json({ error: 'Server Supabase credentials are not configured.' }, 500);
+    const missing = [
+      !supabaseUrl ? 'SUPABASE_URL' : null,
+      !env.SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' : null,
+    ].filter(Boolean);
+
+    return json(
+      {
+        error: 'Server Supabase credentials are not configured.',
+        missing,
+        hint: 'These must be configured as runtime Worker bindings, not Workers Build variables.',
+      },
+      500
+    );
   }
   const authorization = request.headers.get('Authorization');
   if (!authorization?.startsWith('Bearer ')) return json({ error: 'Authentication required.' }, 401);
