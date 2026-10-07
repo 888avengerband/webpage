@@ -18,6 +18,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
   const [instrument, setInstrument] = useState<string>(STANDARD_INSTRUMENTS[0]);
   const [role, setRole] = useState<UserRole>('member');
   const [phone, setPhone] = useState('');
+  const [temporaryPassword, setTemporaryPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,6 +38,11 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       return;
     }
 
+    if (temporaryPassword.length < 8) {
+      setError('Please choose an initial password of at least 8 characters.');
+      return;
+    }
+
     setIsSubmitting(true);
     const res = await addMember({
       first_name: firstName.trim(),
@@ -46,6 +52,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       instrument,
       role,
       phone: phone.trim() || null,
+      temporary_password: temporaryPassword,
     });
 
     setIsSubmitting(false);
@@ -55,6 +62,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       setLastName('');
       setCadet365Email('');
       setPhone('');
+      setTemporaryPassword('');
       setRank('Cdt');
       setInstrument(STANDARD_INSTRUMENTS[0]);
       setRole('member');
@@ -165,6 +173,21 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
             <p className="text-[10px] text-slate-400 mt-1">
               Format: <span className="font-mono text-sky-600">JSmith123@cdt.cadets.gc.ca</span> for cadets · <span className="font-mono text-sky-600">john.smith@cadets.gc.ca</span> for officers, CI
             </p>
+          </div>
+
+          <div>
+            <label className="block font-medium text-slate-700 mb-1">Initial Password *</label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={temporaryPassword}
+              onChange={e => setTemporaryPassword(e.target.value)}
+              placeholder="Choose a password (minimum 8 characters)"
+              autoComplete="new-password"
+              className="w-full px-3 py-2 font-mono bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Give this password to the member. They should change it from My Profile after signing in.</p>
           </div>
 
           <div>
