@@ -16,7 +16,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateCurrentProfile: (updates: Partial<Profile>) => Promise<boolean>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; message: string; resetLink: string }>;
-  changePassword: (password: string) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, password: string) => Promise<{ success: boolean; error?: string }>;
   switchProfile: (profileId: string) => void;
   deleteProfile: (profileId: string) => void;
   availableProfiles: Profile[];
@@ -303,10 +303,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const changePassword = async (password: string): Promise<{ success: boolean; error?: string }> => {
+  const changePassword = async (currentPassword: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const supabase = getSupabaseClient();
     if (!supabase || !isSupabaseConfigured()) return { success: false, error: 'Supabase is not configured.' };
-    if (password.length < 8) return { success: false, error: 'Password must be at least 8 characters.' };
+    if (!activeProfile?.cadet365_email) return { success: false, error: 'No account email is available for this profile.' };
+    if (!currentPassword) return { success: false, error: 'Enter your current password.' };
+    if (password.length < 8) return { success: false, error: 'New password must be at least 8 characters.' };
+    if (currentPassword === password) return { success: false, error: 'Your new password must be different from your current password.' };
+
+    // Re-authenticate first so changing a password always requires the existing password.
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: activeProfile.cadet365_email,
+      password: currentPassword,
+    });
+    if (authError) return { success: false, error: 'Current password is incorrect.' };
+
     const { error } = await supabase.auth.updateUser({ password });
     return error ? { success: false, error: error.message } : { success: true };
   };
