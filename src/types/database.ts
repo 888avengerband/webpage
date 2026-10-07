@@ -158,4 +158,5 @@ export const STANDARD_INSTRUMENTS = [
   'Glockenspiel / Mallets',
   'Drum Major',
   'Director of Music',
+  'TBD / Unsure',
 ];
