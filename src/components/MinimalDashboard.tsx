@@ -223,7 +223,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const filteredMusic = myAssignedMusic.filter(
     m =>
       m.title.toLowerCase().includes(musicSearch.toLowerCase()) ||
-      m.instrumentPart.toLowerCase().includes(musicSearch.toLowerCase())
+      m.instrumentPart.toLowerCase().includes(musicSearch.toLowerCase()) ||
+      m.partName.toLowerCase().includes(musicSearch.toLowerCase())
   );
 
   const [attendanceModeOpen, setAttendanceModeOpen] = useState(false);
