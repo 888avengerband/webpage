@@ -25,6 +25,12 @@ import {
   normalizeProfilesList,
 } from '../lib/mockStore';
 
+const getVancouverDateString = (date = new Date()): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  const part = (type: string) => parts.find(item => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
+
 interface BandDataContextType {
   // Profiles / Roster
   profiles: Profile[];
@@ -131,7 +137,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 
   const [activeRehearsalDate, setActiveRehearsalDate] = useState<string>(() =>
-    new Date().toISOString().slice(0, 10)
+    getVancouverDateString()
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
