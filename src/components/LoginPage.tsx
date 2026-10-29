@@ -21,8 +21,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 }) => {
   const { signIn } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    try { return localStorage.getItem('888band_saved_email') || ''; } catch { return ''; }
+  });
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    try { return localStorage.getItem('888band_remember_me') === 'true'; } catch { return false; }
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -30,6 +35,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     e.preventDefault();
     setError(null);
     setLoading(true);
+    try {
+      if (rememberMe) {
+        localStorage.setItem('888band_remember_me', 'true');
+        localStorage.setItem('888band_saved_email', email.trim());
+      } else {
+        localStorage.removeItem('888band_remember_me');
+        localStorage.removeItem('888band_saved_email');
+      }
+    } catch { /* Browser storage may be disabled. */ }
 
     const res = await signIn(email, password);
     setLoading(false);
@@ -108,6 +122,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               />
             </div>
           </div>
+
+          <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={e => setRememberMe(e.target.checked)}
+              className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            />
+            <span>Remember me on this device</span>
+          </label>
 
           <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
