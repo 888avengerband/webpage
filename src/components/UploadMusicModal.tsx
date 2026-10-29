@@ -75,7 +75,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         return;
       }
       const combinedFile = await buildCombinedScore();
-      await addSongWithPart(title, composer, customPartName.trim() || partName, combinedFile, selectedCadetIds);
+      await addSongWithPart(title, composer, partName, customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
     } else {
       if (!selectedSongId) {
         alert('Please choose an existing song');
@@ -83,7 +83,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         return;
       }
       const combinedFile = await buildCombinedScore();
-      await addSongPart(selectedSongId, customPartName.trim() || partName, combinedFile, selectedCadetIds);
+      await addSongPart(selectedSongId, partName, customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
     }
 
     setIsSubmitting(false);
@@ -203,9 +203,9 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
           </div>
 
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Part / Arrangement Name (optional)</label>
-            <input type="text" value={customPartName} onChange={e => setCustomPartName(e.target.value)} placeholder="e.g. First Clarinet, Melody, Harmony, Solo, Page 1–3" className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500" />
-            <p className="text-[10px] text-slate-500 mt-1">Use this to identify the exact part, not just the instrument.</p>
+            <label className="block font-medium text-slate-700 mb-1">Part / Arrangement Name *</label>
+            <input type="text" required value={customPartName} onChange={e => setCustomPartName(e.target.value)} placeholder="e.g. 1st Clarinet, Melody, Harmony, Solo, Page 1–3" className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500" />
+            <p className="text-[10px] text-slate-500 mt-1">Choose the instrument above, then name the specific part here.</p>
           </div>
 
           {/* File Upload Box (PDF or Image) */}
