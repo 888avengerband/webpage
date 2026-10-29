@@ -1766,25 +1766,25 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
       )}
 
       {assigningPartData && (
-        {attendanceModeOpen && (
+        <AssignPartModal
+          isOpen={Boolean(assigningPartData)}
+          onClose={() => setAssigningPartData(null)}
+          part={assigningPartData.part}
+          song={assigningPartData.song}
+        />
+      )}
+
+      {attendanceModeOpen && (
         <div className="fixed inset-0 z-[80] bg-slate-950/95 flex items-center justify-center p-4">
           <div className="w-full max-w-lg text-white space-y-6">
             <div className="flex items-center justify-between"><div><p className="text-xs uppercase tracking-widest text-sky-300">Attendance Mode · {activeRehearsalDate}</p><p className="text-sm text-slate-300">{Math.min(attendanceModeIndex + 1, attendanceCadets.length)} of {attendanceCadets.length}</p></div><button type="button" onClick={() => setAttendanceModeOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-sm">Exit</button></div>
-            {attendanceModeIndex >= attendanceCadets.length ? <div className="text-center space-y-5"><h2 className="text-3xl font-black">Roll call complete</h2><button type="button" onClick={() => setAttendanceModeOpen(false)} className="px-6 py-3 rounded-xl bg-sky-600 font-bold">Finish</button></div> : attendanceCadets.length === 0 ? <p>No personnel in the attendance list.</p> : <>
+            {attendanceCadets.length === 0 ? <p>No personnel in the attendance list.</p> : attendanceModeIndex >= attendanceCadets.length ? <div className="text-center space-y-5"><h2 className="text-3xl font-black">Roll call complete</h2><button type="button" onClick={() => setAttendanceModeOpen(false)} className="px-6 py-3 rounded-xl bg-sky-600 font-bold">Finish</button></div> : <>
               <div className="rounded-3xl border border-slate-700 bg-slate-900 px-5 py-12 text-center"><p className="text-sm text-sky-300 font-bold mb-3">{attendanceCadets[attendanceModeIndex].rank} · {attendanceCadets[attendanceModeIndex].instrument}</p><h2 className="text-3xl sm:text-4xl font-black">{attendanceCadets[attendanceModeIndex].first_name} {attendanceCadets[attendanceModeIndex].last_name}</h2><p className="mt-3 text-sm text-slate-400">Current status: {attendanceMap[attendanceCadets[attendanceModeIndex].id] || 'Not marked'}</p></div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{([{label:'Present',status:'Present' as AttendanceStatus,cls:'bg-emerald-600'},{label:'Absent',status:'Absent' as AttendanceStatus,cls:'bg-rose-600'},{label:'Late',status:'Late' as AttendanceStatus,cls:'bg-amber-500 text-slate-950'},{label:'Absent Excused',status:'Absent Excused - AE' as AttendanceStatus,cls:'bg-sky-600'}]).map(option=><button key={option.status} type="button" onClick={async()=>{const ok=await markAttendance(attendanceCadets[attendanceModeIndex].id,activeRehearsalDate,option.status);if(ok)setAttendanceModeIndex(i=>i+1);else showSaveToast('Attendance Error','Could not save this attendance status.');}} className={`min-h-16 rounded-2xl px-3 py-4 font-bold text-sm ${option.cls}`}>{option.label}</button>)}</div>
               <div className="flex justify-between gap-3"><button type="button" onClick={()=>setAttendanceModeIndex(i=>Math.max(0,i-1))} disabled={attendanceModeIndex===0} className="px-5 py-3 rounded-xl bg-slate-800 disabled:opacity-30">Previous</button><button type="button" onClick={()=>setAttendanceModeIndex(i=>i+1)} className="px-6 py-3 rounded-xl bg-slate-700 font-bold">Skip</button></div>
             </>}
           </div>
         </div>
-      )}
-
-      <AssignPartModal
-          isOpen={Boolean(assigningPartData)}
-          onClose={() => setAssigningPartData(null)}
-          part={assigningPartData.part}
-          song={assigningPartData.song}
-        />
       )}
 
       {selectedCadetModal && (
