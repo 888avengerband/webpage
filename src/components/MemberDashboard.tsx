@@ -70,6 +70,7 @@ export const MemberDashboard: React.FC = () => {
     m =>
       m.title.toLowerCase().includes(musicSearch.toLowerCase()) ||
       m.instrumentPart.toLowerCase().includes(musicSearch.toLowerCase()) ||
+      m.partName.toLowerCase().includes(musicSearch.toLowerCase()) ||
       m.composer.toLowerCase().includes(musicSearch.toLowerCase())
   );
 
