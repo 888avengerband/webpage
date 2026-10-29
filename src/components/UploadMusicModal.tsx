@@ -16,11 +16,13 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const [title, setTitle] = useState('');
   const [composer, setComposer] = useState('');
   const [partName, setPartName] = useState(STANDARD_INSTRUMENTS[0]);
+  const [customPartName, setCustomPartName] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [isImageFile, setIsImageFile] = useState(false);
   const [selectedCadetIds, setSelectedCadetIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   if (!isOpen) return null;
 
@@ -31,28 +33,36 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFileName(file.name);
-      const isImg = file.type.startsWith('image/');
-      setIsImageFile(isImg);
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(files);
+    setFileName(files.map(file => file.name).join(', '));
+    setIsImageFile(files.length === 1 && files[0].type.startsWith('image/'));
+    setFileUrl('');
+  };
 
-      // Read as Data URL so uploaded images and PDFs persist reliably across reloads
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setFileUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
+  const readFileAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read file'));
+    reader.onerror = () => reject(new Error('Could not read ' + file.name));
+    reader.readAsDataURL(file);
+  });
+
+  const buildCombinedScore = async (): Promise<string> => {
+    if (selectedFiles.length === 1) return readFileAsDataUrl(selectedFiles[0]);
+    const files = await Promise.all(selectedFiles.map(async file => ({ name: file.name, type: file.type, data: await readFileAsDataUrl(file) })));
+    const sections = files.map(file => file.type.startsWith('image/')
+      ? '<section><h2>' + file.name.replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch] || ch)) + '</h2><img src="' + file.data + '" alt="' + file.name + '" /></section>'
+      : '<section><h2>' + file.name.replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch] || ch)) + '</h2><iframe title="' + file.name + '" src="' + file.data + '"></iframe><p><a href="' + file.data + '" target="_blank" rel="noreferrer">Open PDF separately</a></p></section>'
+    ).join('');
+    const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Combined Sheet Music</title><style>body{font-family:system-ui;margin:0;background:#eef2f7;color:#172033}header{padding:16px;background:#0f172a;color:white}section{margin:16px;padding:16px;background:white;border-radius:12px;box-shadow:0 1px 4px #0002}img{max-width:100%;height:auto;display:block;margin:auto}iframe{width:100%;height:80vh;border:0}</style></head><body><header><h1>Combined Sheet Music</h1><p>' + files.length + ' files · use the sections below</p></header>' + sections + '</body></html>';
+    return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    if (!fileUrl) {
+    if (selectedFiles.length === 0 && !fileUrl) {
       alert('Please select a PDF or image file');
       setIsSubmitting(false);
       return;
@@ -64,14 +74,16 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         setIsSubmitting(false);
         return;
       }
-      await addSongWithPart(title, composer, partName, fileUrl, selectedCadetIds);
+      const combinedFile = await buildCombinedScore();
+      await addSongWithPart(title, composer, customPartName.trim() || partName, combinedFile, selectedCadetIds);
     } else {
       if (!selectedSongId) {
         alert('Please choose an existing song');
         setIsSubmitting(false);
         return;
       }
-      await addSongPart(selectedSongId, partName, fileUrl, selectedCadetIds);
+      const combinedFile = await buildCombinedScore();
+      await addSongPart(selectedSongId, customPartName.trim() || partName, combinedFile, selectedCadetIds);
     }
 
     setIsSubmitting(false);
@@ -174,7 +186,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
           )}
 
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Instrument Part Name *</label>
+            <label className="block font-medium text-slate-700 mb-1">Instrument *</label>
             <div className="flex gap-2">
               <select
                 value={partName}
@@ -190,10 +202,16 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
+          <div>
+            <label className="block font-medium text-slate-700 mb-1">Part / Arrangement Name (optional)</label>
+            <input type="text" value={customPartName} onChange={e => setCustomPartName(e.target.value)} placeholder="e.g. First Clarinet, Melody, Harmony, Solo, Page 1–3" className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500" />
+            <p className="text-[10px] text-slate-500 mt-1">Use this to identify the exact part, not just the instrument.</p>
+          </div>
+
           {/* File Upload Box (PDF or Image) */}
           <div>
             <label className="block font-medium text-slate-700 mb-1">
-              Score File (PDF or Image: JPG, PNG, WebP)
+              Score Files (select multiple PDFs and photos)
             </label>
             <div className="border-2 border-dashed border-slate-200 hover:border-sky-400 rounded-2xl p-5 text-center bg-slate-50 transition-colors">
               {isImageFile && fileUrl.startsWith('data:image/') ? (
@@ -210,15 +228,16 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
                 <FileText className="w-7 h-7 text-sky-600 mx-auto mb-1.5" />
               )}
               <p className="font-semibold text-slate-800">
-                {fileName ? fileName : 'Choose PDF or Image Part'}
+                {fileName ? fileName : 'Choose PDF(s) or photo(s)'}
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Supported formats: PDF, PNG, JPG, JPEG, WebP · <code className="text-sky-700">sheet-music</code>
+                Select one or multiple files: PDF, PNG, JPG, JPEG, WebP · <code className="text-sky-700">sheet-music</code>
               </p>
               <label className="mt-3 inline-block cursor-pointer px-3.5 py-1.5 font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-colors shadow-sm">
-                Select File
+                Select File(s)
                 <input
                   type="file"
+                  multiple
                   accept="application/pdf,image/png,image/jpeg,image/webp,image/*"
                   onChange={handleFileChange}
                   className="hidden"
