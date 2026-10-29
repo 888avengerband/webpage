@@ -47,13 +47,15 @@ interface BandDataContextType {
   addSongWithPart: (
     title: string,
     composer: string,
+    instrument: string,
     partName: string,
     fileUrl: string,
     assignedCadetIds?: string[]
   ) => Promise<boolean>;
   addSongPart: (
     songId: string,
-    instrumentPart: string,
+    instrument: string,
+    partName: string,
     fileUrl: string,
     assignedCadetIds?: string[]
   ) => Promise<boolean>;
@@ -261,6 +263,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           title: song.title,
           composer: song.composer,
           instrumentPart: part.instrument_part,
+          partName: part.part_name || 'Main Part',
           fileUrl: part.file_url,
           assignedAt: pa.created_at,
         });
@@ -407,6 +410,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const addSongWithPart = async (
     title: string,
     composer: string,
+    instrument: string,
     partName: string,
     fileUrl: string,
     assignedCadetIds?: string[]
@@ -426,7 +430,8 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newPart: SongPart = {
       id: newPartId,
       song_id: newSongId,
-      instrument_part: partName.trim(),
+      instrument_part: instrument.trim(),
+      part_name: partName.trim(),
       file_url: fileUrl.trim(),
       created_at: new Date().toISOString(),
     };
@@ -449,7 +454,8 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addSongPart = async (
     songId: string,
-    instrumentPart: string,
+    instrument: string,
+    partName: string,
     fileUrl: string,
     assignedCadetIds?: string[]
   ): Promise<boolean> => {
@@ -459,7 +465,8 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newPart: SongPart = {
       id: newPartId,
       song_id: songId,
-      instrument_part: instrumentPart.trim(),
+      instrument_part: instrument.trim(),
+      part_name: partName.trim(),
       file_url: fileUrl.trim(),
       created_at: new Date().toISOString(),
     };
