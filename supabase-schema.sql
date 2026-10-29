@@ -46,6 +46,7 @@ CREATE TABLE public.song_parts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     song_id UUID NOT NULL REFERENCES public.sheet_music(id) ON DELETE CASCADE,
     instrument_part TEXT NOT NULL,
+    part_name TEXT NOT NULL DEFAULT 'Main Part',
     file_url TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
