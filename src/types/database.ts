@@ -55,6 +55,7 @@ export interface SongPart {
   id: string;
   song_id: string;
   instrument_part: string;
+  part_name?: string;
   file_url: string;
   created_at: string;
   song?: SheetMusic;
@@ -118,6 +119,7 @@ export interface CadetAssignedMusic {
   title: string;
   composer: string;
   instrumentPart: string;
+  partName: string;
   fileUrl: string;
   assignedAt: string;
 }
