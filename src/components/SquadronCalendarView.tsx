@@ -38,16 +38,19 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
   const [filterType, setFilterType] = useState<string>('all');
   
  // Month navigation: default to the current month
-const today = new Date();
-const [currentYear, setCurrentYear] = useState<number>(today.getFullYear());
-const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
+const vancouverDateParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+const todayYear = Number(vancouverDateParts.find(part => part.type === 'year')?.value);
+const todayMonth = Number(vancouverDateParts.find(part => part.type === 'month')?.value) - 1;
+const todayDateString = `${vancouverDateParts.find(part => part.type === 'year')?.value}-${vancouverDateParts.find(part => part.type === 'month')?.value}-${vancouverDateParts.find(part => part.type === 'day')?.value}`;
+const [currentYear, setCurrentYear] = useState<number>(todayYear);
+const [currentMonth, setCurrentMonth] = useState<number>(todayMonth);
 
   // Add Event Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [title, setTitle] = useState('Band Practice');
   const [eventType, setEventType] = useState<EventType>('rehearsal');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));;
+  const [date, setDate] = useState(() => todayDateString);;
   const [startTime, setStartTime] = useState('18:30');
   const [endTime, setEndTime] = useState('21:00');
   const [location, setLocation] = useState('Walter Moberly Elementary Gym');
@@ -369,7 +372,7 @@ const [currentMonth, setCurrentMonth] = useState<number>(today.getMonth());
               const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
               const dayEvents = calendarEvents.filter(e => e.date === dateStr);
               const hasEvents = dayEvents.length > 0;
-              const isToday = dateStr === new Date().toISOString().slice(0, 10);
+              const isToday = dateStr === todayDateString;
 
               return (
                 <div
