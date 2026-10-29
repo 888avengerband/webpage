@@ -757,6 +757,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                         <span className="text-[10px] text-slate-400 font-mono">PDF Score</span>
                       </div>
                       <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
+                      <p className="text-sm font-semibold text-sky-700 mt-1">Part: {item.partName || 'Main Part'}</p>
                       <p className="text-xs text-slate-500 italic mt-0.5">{item.composer}</p>
                     </div>
 
@@ -991,6 +992,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                         <span className="text-[10px] text-slate-400 font-mono">PDF Score</span>
                       </div>
                       <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
+                      <p className="text-sm font-semibold text-sky-700 mt-1">Part: {item.partName || 'Main Part'}</p>
                       <p className="text-xs text-slate-500 italic mt-0.5">{item.composer}</p>
                     </div>
 
