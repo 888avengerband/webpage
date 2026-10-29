@@ -52,6 +52,12 @@ import { UploadMusicModal } from './UploadMusicModal';
 import { AssignPartModal } from './AssignPartModal';
 import { SquadronCalendarView } from './SquadronCalendarView';
 
+const getVancouverDateString = (date = new Date()): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  const part = (type: string) => parts.find(item => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
+
 interface MinimalDashboardProps {
   onLogout: () => void;
   onOpenSqlModal: () => void;
@@ -202,7 +208,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   };
 
   // Absence Form state
-  const [absenceDate, setAbsenceDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [absenceDate, setAbsenceDate] = useState(() => getVancouverDateString());
   const [absenceReason, setAbsenceReason] = useState('');
   const [absenceSuccess, setAbsenceSuccess] = useState(false);
 
@@ -495,7 +501,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
     const link = document.createElement('a');
     link.href = encodeURI(csvContent);
-    link.download = `888_Avenger_Attendance_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `888_Avenger_Attendance_${getVancouverDateString()}.csv`;
     link.click();
   };
 
