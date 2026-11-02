@@ -148,6 +148,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isUploadMusicOpen, setIsUploadMusicOpen] = useState(false);
   const [editingMusicPart, setEditingMusicPart] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
+  const [editingSheetMusic, setEditingSheetMusic] = useState<SheetMusic | null>(null);
   const [assigningPartData, setAssigningPartData] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
   const [selectedPartDetails, setSelectedPartDetails] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -1676,6 +1677,13 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                       </div>
                       <button
                         type="button"
+                        onClick={() => setEditingSheetMusic(song)}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold"
+                      >
+                        Edit Piece Info
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => {
                           setDeleteConfirmItem({
                             type: 'song',
@@ -1762,6 +1770,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
       />
 
       {editingMusicPart && <UploadMusicModal isOpen={true} editingPart={editingMusicPart.part} editingSong={editingMusicPart.song} onClose={() => setEditingMusicPart(null)} />}
+      {editingSheetMusic && <UploadMusicModal isOpen={true} editingSong={editingSheetMusic} onClose={() => setEditingSheetMusic(null)} />}
 
       {selectedPartDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -1770,6 +1779,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
               <div className="min-w-0">
                 <p className="text-[10px] uppercase tracking-wide font-bold text-sky-600">Sheet Music Part</p>
                 <h3 className="text-base font-bold text-slate-900 truncate">{selectedPartDetails.part.instrument_part}</h3>
+                <p className="text-xs font-semibold text-slate-700 mt-1">Part: {selectedPartDetails.part.part_name || 'Main Part'}</p>
                 <p className="text-xs text-slate-500 italic truncate">{selectedPartDetails.song.title} · {selectedPartDetails.song.composer}</p>
               </div>
               <button type="button" onClick={() => setSelectedPartDetails(null)} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg">
