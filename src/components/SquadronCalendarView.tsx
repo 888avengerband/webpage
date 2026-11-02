@@ -23,7 +23,7 @@ interface SquadronCalendarViewProps {
   onAddEvent: (eventData: Omit<CalendarEvent, 'id' | 'created_at'>) => Promise<boolean>;
   onUpdateEvent: (id: string, eventData: Partial<Omit<CalendarEvent, 'id' | 'created_at'>>) => Promise<boolean>;
   onDeleteEvent: (id: string, title: string, subtitle?: string) => void;
-  onSelectRehearsalDate?: (date: string) => void;
+  onSelectRehearsalDate?: (date: string, title: string) => void;
 }
 
 export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
@@ -36,6 +36,7 @@ export const SquadronCalendarView: React.FC<SquadronCalendarViewProps> = ({
 }) => {
   // Filter state
   const [filterType, setFilterType] = useState<string>('all');
+  const [eventView, setEventView] = useState<'upcoming' | 'past'>('upcoming');
   
  // Month navigation: default to the current month
 const vancouverDateParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
@@ -88,6 +89,8 @@ const [currentMonth, setCurrentMonth] = useState<number>(todayMonth);
 
   // Filtered events
   const filteredEvents = calendarEvents.filter(evt => {
+    const isPast = evt.date < todayDateString;
+    if (eventView === 'past' ? !isPast : isPast) return false;
     if (filterType === 'all') return true;
     return evt.event_type === filterType;
   }).sort((a, b) => a.date.localeCompare(b.date));
@@ -284,6 +287,11 @@ const [currentMonth, setCurrentMonth] = useState<number>(todayMonth);
           </div>
         </div>
 
+        <div className="flex items-center gap-2 pt-1">
+          <button type="button" onClick={() => setEventView('upcoming')} className={`px-3 py-2 rounded-lg text-xs font-bold ${eventView === 'upcoming' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Upcoming Events ({calendarEvents.filter(e => e.date >= todayDateString).length})</button>
+          <button type="button" onClick={() => setEventView('past')} className={`px-3 py-2 rounded-lg text-xs font-bold ${eventView === 'past' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Past Events ({calendarEvents.filter(e => e.date < todayDateString).length})</button>
+        </div>
+
         {/* Filter Pills */}
         <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
           <span className="text-[11px] font-semibold text-slate-400 mr-1 uppercase">Filter:</span>
@@ -329,10 +337,9 @@ const [currentMonth, setCurrentMonth] = useState<number>(todayMonth);
               <button
                 type="button"
                 onClick={() => {
-                 const today = new Date();
-                setCurrentYear(today.getFullYear());
-              setCurrentMonth(today.getMonth());
-            }}
+                setCurrentYear(todayYear);
+                setCurrentMonth(todayMonth);
+              }}
                 className="px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 rounded-md"
               >
                 Today
@@ -424,7 +431,7 @@ const [currentMonth, setCurrentMonth] = useState<number>(todayMonth);
         <div className="lg:col-span-7 space-y-3.5">
           <div className="flex items-center justify-between px-1">
             <h3 className="font-heading font-bold text-sm text-slate-900 flex items-center gap-1.5">
-              <span>Scheduled Rehearsals & Dates</span>
+              <span>{eventView === 'past' ? 'Past Events' : 'Upcoming Events'}</span>
               <span className="text-xs font-mono font-normal text-slate-400">({filteredEvents.length})</span>
             </h3>
             {isAdmin && (
@@ -518,9 +525,9 @@ const [currentMonth, setCurrentMonth] = useState<number>(todayMonth);
                     {isAdmin && onSelectRehearsalDate && (
                       <button
                         type="button"
-                        onClick={() => onSelectRehearsalDate(evt.date)}
+                        onClick={() => onSelectRehearsalDate(evt.date, evt.title)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold transition-colors"
-                        title={`Take Roll-Call for ${evt.date}`}
+                        title={`Take Roll-Call for ${evt.title} (${evt.date})`}
                       >
                         <CheckSquare className="w-3.5 h-3.5" />
                         <span>Roll-Call</span>
