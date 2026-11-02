@@ -206,7 +206,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
                 ))}
               </select>
             </div>
-          )}
+          ) : null}
 
           <div>
             <label className="block font-medium text-slate-700 mb-2">Instrument(s) * — select all that apply</label>
