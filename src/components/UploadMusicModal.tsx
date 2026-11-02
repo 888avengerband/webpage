@@ -66,9 +66,9 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const buildCombinedScore = async (): Promise<string> => {
     if (selectedFiles.length === 1) return readFileAsDataUrl(selectedFiles[0]);
     const files = await Promise.all(selectedFiles.map(async file => ({ name: file.name, type: file.type, data: await readFileAsDataUrl(file) })));
-    const sections = files.map(file => file.type.startsWith('image/')
-      ? '<section><h2>' + file.name.replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch] || ch)) + '</h2><img src="' + file.data + '" alt="' + file.name + '" /></section>'
-      : '<section><h2>' + file.name.replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch] || ch)) + '</h2><iframe title="' + file.name + '" src="' + file.data + '"></iframe><p><a href="' + file.data + '" target="_blank" rel="noreferrer">Open PDF separately</a></p></section>'
+    const sections = files.map((file, index) => file.type.startsWith('image/')
+      ? '<section><div class="page-label">Page ' + (index + 1) + '</div><img src="' + file.data + '" alt="Sheet music page ' + (index + 1) + '" /></section>'
+      : '<section><div class="page-label">Page ' + (index + 1) + '</div><iframe title="Sheet music page ' + (index + 1) + '" src="' + file.data + '"></iframe><p><a href="' + file.data + '" target="_blank" rel="noreferrer">Open PDF</a></p></section>'
     ).join('');
     const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Combined Sheet Music</title><style>body{font-family:system-ui;margin:0;background:#eef2f7;color:#172033}header{padding:16px;background:#0f172a;color:white}section{margin:16px;padding:16px;background:white;border-radius:12px;box-shadow:0 1px 4px #0002}img{max-width:100%;height:auto;max-height:92vh;object-fit:contain;display:block;margin:auto}.page-label{font-size:12px;font-weight:700;color:#64748b;margin-bottom:10px}iframe{width:100%;height:85vh;border:0;background:white}</style></head><body><header><h1>Combined Sheet Music</h1><p>' + files.length + ' files · use the sections below</p></header>' + sections + '</body></html>';
     return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
@@ -85,7 +85,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
       return;
     }
 
-    if (mode === 'new_song') {
+    if (!editingPart && mode === 'new_song') {
       if (!title.trim()) {
         alert('Please enter a song title');
         setIsSubmitting(false);
