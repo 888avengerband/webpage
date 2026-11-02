@@ -66,6 +66,7 @@ interface BandDataContextType {
     assignedCadetIds?: string[]
   ) => Promise<boolean>;
   assignCadetsToPart: (songPartId: string, profileIds: string[]) => Promise<boolean>;
+  updateSongPart: (id: string, updates: Partial<Pick<SongPart, 'instrument_part' | 'part_name' | 'file_url'>>) => Promise<boolean>;
   deleteSong: (id: string) => Promise<boolean>;
   deleteSongPart: (id: string) => Promise<boolean>;
   myAssignedMusic: CadetAssignedMusic[];
@@ -489,6 +490,16 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setPartAssignments(prev => [...prev, ...newAssignments]);
     }
 
+    return true;
+  };
+
+  const updateSongPart = async (id: string, updates: Partial<Pick<SongPart, 'instrument_part' | 'part_name' | 'file_url'>>): Promise<boolean> => {
+    if (!isAdmin) return false;
+    setSongParts(prev => {
+      const next = prev.map(part => part.id === id ? { ...part, ...updates } : part);
+      saveToStorage('song_parts', next);
+      return next;
+    });
     return true;
   };
 
@@ -937,6 +948,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addSongWithPart,
         addSongPart,
         assignCadetsToPart,
+        updateSongPart,
         deleteSong,
         deleteSongPart,
         myAssignedMusic,
