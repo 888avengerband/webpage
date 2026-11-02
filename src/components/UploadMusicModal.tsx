@@ -11,12 +11,12 @@ interface UploadMusicModalProps {
 }
 
 export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onClose, editingPart, editingSong }) => {
-  const { sheetMusic, profiles, addSongWithPart, addSongPart, updateSongPart } = useBandData();
+  const { sheetMusic, profiles, addSongWithPart, addSongPart, updateSongPart, updateSheetMusic } = useBandData();
 
   const [mode, setMode] = useState<'new_song' | 'existing_song'>('new_song');
   const [selectedSongId, setSelectedSongId] = useState<string>(editingSong?.id || sheetMusic[0]?.id || '');
-  const [title, setTitle] = useState('');
-  const [composer, setComposer] = useState('');
+  const [title, setTitle] = useState(editingSong?.title || '');
+  const [composer, setComposer] = useState(editingSong?.composer || '');
   const [selectedInstruments, setSelectedInstruments] = useState<string[]>(editingPart ? editingPart.instrument_part.split(',').map(x => x.trim()).filter(Boolean) : [STANDARD_INSTRUMENTS[0]]);
   const [customPartName, setCustomPartName] = useState(editingPart?.part_name || '');
   const [fileUrl, setFileUrl] = useState('');
@@ -24,6 +24,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const [selectedCadetIds, setSelectedCadetIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const isEditingSong = Boolean(editingSong && !editingPart);
 
   if (!isOpen) return null;
 
@@ -85,7 +86,10 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
       return;
     }
 
-    if (!editingPart && mode === 'new_song') {
+    if (isEditingSong) {
+      if (!title.trim()) { alert('Please enter a piece title'); return; }
+      await updateSheetMusic(editingSong!.id, { title: title.trim(), composer: composer.trim() || 'Arranged for 888 Avenger Band' });
+    } else if (!editingPart && mode === 'new_song') {
       if (!title.trim()) {
         alert('Please enter a song title');
         setIsSubmitting(false);
@@ -127,7 +131,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">{editingPart ? 'Edit Music Part' : 'Upload Sheet Music & Song Part'}</h3>
+              <h3 className="text-sm font-bold text-slate-900">{editingPart ? 'Edit Music Part' : isEditingSong ? 'Edit Piece Details' : 'Upload Sheet Music & Song Part'}</h3>
               <p className="text-xs text-slate-500">888 Avenger Squadron Repertoire</p>
             </div>
           </div>
@@ -140,7 +144,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Mode Selector */}
-        {!editingPart && <div className="px-6 pt-3 pb-2 bg-slate-50 flex gap-2 border-b border-slate-200 text-xs">
+        {!editingPart && !isEditingSong && <div className="px-6 pt-3 pb-2 bg-slate-50 flex gap-2 border-b border-slate-200 text-xs">
           <button
             type="button"
             onClick={() => setMode('new_song')}
@@ -167,7 +171,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
-          {!editingPart && mode === 'new_song' ? (
+          {!editingPart && (mode === 'new_song' || isEditingSong) ? (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-medium text-slate-700 mb-1">Song Title *</label>
@@ -191,7 +195,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
                 />
               </div>
             </div>
-          ) : !editingPart ? (
+          ) : !editingPart && !isEditingSong ? (
             <div>
               <label className="block font-medium text-slate-700 mb-1">Select Song</label>
               <select
@@ -208,6 +212,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
             </div>
           ) : null}
 
+          {!isEditingSong && <>
           <div>
             <label className="block font-medium text-slate-700 mb-2">Instrument(s) * — select all that apply</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -317,6 +322,8 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
+          </>}
+
           <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-200">
             <button
               type="button"
@@ -330,7 +337,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
               disabled={isSubmitting}
               className="px-4 py-2 font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-colors shadow-sm disabled:opacity-50"
             >
-              {isSubmitting ? 'Saving...' : editingPart ? 'Save Part Changes' : 'Save & Assign Part'}
+              {isSubmitting ? 'Saving...' : editingPart ? 'Save Part Changes' : isEditingSong ? 'Save Piece Details' : 'Save & Assign Part'}
             </button>
           </div>
         </form>
