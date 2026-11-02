@@ -235,6 +235,10 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   const [attendanceModeOpen, setAttendanceModeOpen] = useState(false);
   const [attendanceModeIndex, setAttendanceModeIndex] = useState(0);
+  const [pastEventRollCall, setPastEventRollCall] = useState(false);
+  const [selectedRollCallEventTitle, setSelectedRollCallEventTitle] = useState('');
+  const [exportEventsOpen, setExportEventsOpen] = useState(false);
+  const [selectedExportDates, setSelectedExportDates] = useState<string[]>([]);
 
   // Cadets for Attendance Roll Call: include admins as well as non-officer personnel
   const attendanceCadets = useMemo(() => {
@@ -472,14 +476,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     }
   };
 
-  const handleExportCsv = () => {
+  const handleExportCsv = (datesToExport: string[] = [activeRehearsalDate]) => {
     const headers = ['Cadet Name', 'Rank', 'Cadet365 Email', 'Instrument', 'Date', 'Status'];
     const rows: string[][] = [];
 
     profiles
       .filter(p => p.role === 'member')
       .forEach(cadet => {
-        rehearsalDates.forEach(date => {
+        datesToExport.forEach(date => {
           const rec = attendanceRecords.find(
             r => r.profile_id === cadet.id && r.date === date
           );
@@ -503,6 +507,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     link.href = encodeURI(csvContent);
     link.download = `888_Avenger_Attendance_${getVancouverDateString()}.csv`;
     link.click();
+    setExportEventsOpen(false);
   };
 
   return (
@@ -1255,17 +1260,20 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
               <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center gap-2.5 bg-slate-50/50">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <label className="text-xs font-semibold text-slate-600">Rehearsal Date:</label>
+                  <label className="text-xs font-semibold text-slate-600">Event / Rehearsal:</label>
                   <select
                     value={activeRehearsalDate}
-                    onChange={e => setActiveRehearsalDate(e.target.value)}
+                    onChange={e => {
+                      setActiveRehearsalDate(e.target.value);
+                      setPastEventRollCall(false);
+                      setSelectedRollCallEventTitle(calendarEvents.find(evt => evt.date === e.target.value)?.title || 'Rehearsal / Event');
+                    }}
                     className="px-3 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
                   >
-                    {rehearsalDates.map(d => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
+                    {rehearsalDates.filter(d => pastEventRollCall || d >= getVancouverDateString()).map(d => {
+                      const eventTitle = calendarEvents.find(evt => evt.date === d)?.title || 'Rehearsal / Event';
+                      return <option key={d} value={d}>{eventTitle} — {d}</option>;
+                    })}
                   </select>
 
                   <button
@@ -1351,14 +1359,15 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
                   <button
                     type="button"
-                    onClick={handleExportCsv}
+                    onClick={() => { setSelectedExportDates([activeRehearsalDate]); setExportEventsOpen(true); }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors whitespace-nowrap"
                   >
                     <Download className="w-3.5 h-3.5 text-sky-600" />
-                    <span>Export CSV</span>
+                    <span>Export Attendance</span>
                   </button>
                 </div>
               </div>
+              <div className="px-4 text-[11px] text-slate-500">Taking roll call for: <strong className="text-slate-700">{selectedRollCallEventTitle || calendarEvents.find(evt => evt.date === activeRehearsalDate)?.title || 'Rehearsal / Event'}</strong>{pastEventRollCall ? ' · Past event editing' : ''}</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
@@ -1477,8 +1486,10 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             onDeleteEvent={(id, title, subtitle) => {
               setDeleteConfirmItem({ type: 'calendar_event', id, title, subtitle });
             }}
-            onSelectRehearsalDate={date => {
+            onSelectRehearsalDate={(date, title) => {
               setActiveRehearsalDate(date);
+              setPastEventRollCall(date < getVancouverDateString());
+              setSelectedRollCallEventTitle(title);
               setAdminTab('rollcall');
             }}
           />
@@ -1692,6 +1703,18 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           </div>
         )}
       </main>
+
+      {exportEventsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
+          <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between"><h3 className="text-base font-bold text-slate-900">Export Attendance</h3><button type="button" onClick={() => setExportEventsOpen(false)} className="p-2 text-slate-500">✕</button></div>
+            <p className="text-xs text-slate-500">Choose the events to include in one CSV file. All registered cadets will be included for each selected event.</p>
+            <div className="flex gap-2"><button type="button" onClick={() => setSelectedExportDates(rehearsalDates)} className="text-xs text-sky-700 font-semibold">Select all</button><button type="button" onClick={() => setSelectedExportDates([])} className="text-xs text-slate-500 font-semibold">Clear</button></div>
+            <div className="space-y-2">{rehearsalDates.map(d => { const title = calendarEvents.find(evt => evt.date === d)?.title || 'Rehearsal / Event'; return <label key={d} className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-xs"><input type="checkbox" checked={selectedExportDates.includes(d)} onChange={e => setSelectedExportDates(prev => e.target.checked ? [...prev, d] : prev.filter(x => x !== d))} /><span className="font-semibold text-slate-800">{title}</span><span className="ml-auto text-slate-500 font-mono">{d}</span></label>; })}</div>
+            <div className="flex justify-end gap-2"><button type="button" onClick={() => setExportEventsOpen(false)} className="px-3 py-2 rounded-lg border text-xs">Cancel</button><button type="button" disabled={!selectedExportDates.length} onClick={() => handleExportCsv(selectedExportDates)} className="px-4 py-2 rounded-lg bg-sky-600 text-white text-xs font-bold disabled:opacity-40">Export {selectedExportDates.length} event(s)</button></div>
+          </div>
+        </div>
+      )}
 
       <AddMemberModal
         isOpen={isAddMemberOpen}
