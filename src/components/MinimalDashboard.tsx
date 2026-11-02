@@ -1833,7 +1833,10 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 </a>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap justify-between gap-2">
+                <button type="button" onClick={() => { setEditingSheetMusic(selectedPartDetails.song); setSelectedPartDetails(null); }} className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold">
+                  Edit Piece Info
+                </button>
                 <button type="button" onClick={() => setAssigningPartData(selectedPartDetails)} className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
                   Manage Assignments
                 </button>
