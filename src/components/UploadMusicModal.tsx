@@ -163,8 +163,6 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
           >
             Add Part to Existing Song
           </button>
-        </div>
-
         </div>}
 
         {/* Content */}
