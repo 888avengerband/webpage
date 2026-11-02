@@ -40,12 +40,26 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
     setFileUrl('');
   };
 
-  const readFileAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read file'));
-    reader.onerror = () => reject(new Error('Could not read uploaded file'));
-    reader.readAsDataURL(file);
-  });
+  const readFileAsDataUrl = async (file: File): Promise<string> => {
+    if (file.type.startsWith('image/') && typeof createImageBitmap === 'function') {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Could not prepare the uploaded image.');
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      return canvas.toDataURL('image/jpeg', 0.82);
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read file'));
+      reader.onerror = () => reject(new Error('Could not read uploaded file'));
+      reader.readAsDataURL(file);
+    });
+  };
 
   const toggleInstrument = (instrument: string) => setSelectedInstruments(prev => prev.includes(instrument) ? prev.filter(x => x !== instrument) : [...prev, instrument]);
 
@@ -56,7 +70,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
       ? '<section><h2>' + file.name.replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch] || ch)) + '</h2><img src="' + file.data + '" alt="' + file.name + '" /></section>'
       : '<section><h2>' + file.name.replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch] || ch)) + '</h2><iframe title="' + file.name + '" src="' + file.data + '"></iframe><p><a href="' + file.data + '" target="_blank" rel="noreferrer">Open PDF separately</a></p></section>'
     ).join('');
-    const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Combined Sheet Music</title><style>body{font-family:system-ui;margin:0;background:#eef2f7;color:#172033}header{padding:16px;background:#0f172a;color:white}section{margin:16px;padding:16px;background:white;border-radius:12px;box-shadow:0 1px 4px #0002}img{max-width:100%;height:auto;display:block;margin:auto}iframe{width:100%;height:80vh;border:0}</style></head><body><header><h1>Combined Sheet Music</h1><p>' + files.length + ' files · use the sections below</p></header>' + sections + '</body></html>';
+    const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Combined Sheet Music</title><style>body{font-family:system-ui;margin:0;background:#eef2f7;color:#172033}header{padding:16px;background:#0f172a;color:white}section{margin:16px;padding:16px;background:white;border-radius:12px;box-shadow:0 1px 4px #0002}img{max-width:100%;height:auto;max-height:92vh;object-fit:contain;display:block;margin:auto}.page-label{font-size:12px;font-weight:700;color:#64748b;margin-bottom:10px}iframe{width:100%;height:85vh;border:0;background:white}</style></head><body><header><h1>Combined Sheet Music</h1><p>' + files.length + ' files · use the sections below</p></header>' + sections + '</body></html>';
     return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
   };
 
