@@ -65,6 +65,7 @@ interface BandDataContextType {
     fileUrl: string,
     assignedCadetIds?: string[]
   ) => Promise<boolean>;
+  updateSheetMusic: (id: string, updates: Partial<Pick<SheetMusic, 'title' | 'composer'>>) => Promise<boolean>;
   assignCadetsToPart: (songPartId: string, profileIds: string[]) => Promise<boolean>;
   updateSongPart: (id: string, updates: Partial<Pick<SongPart, 'instrument_part' | 'part_name' | 'file_url'>>) => Promise<boolean>;
   deleteSong: (id: string) => Promise<boolean>;
@@ -490,6 +491,16 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setPartAssignments(prev => [...prev, ...newAssignments]);
     }
 
+    return true;
+  };
+
+  const updateSheetMusic = async (id: string, updates: Partial<Pick<SheetMusic, 'title' | 'composer'>>): Promise<boolean> => {
+    if (!isAdmin) return false;
+    setSheetMusic(prev => {
+      const next = prev.map(song => song.id === id ? { ...song, ...updates } : song);
+      saveToStorage('sheet_music', next);
+      return next;
+    });
     return true;
   };
 
@@ -947,6 +958,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         partAssignments,
         addSongWithPart,
         addSongPart,
+        updateSheetMusic,
         assignCadetsToPart,
         updateSongPart,
         deleteSong,
