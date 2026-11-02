@@ -146,6 +146,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   // Modals state
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isUploadMusicOpen, setIsUploadMusicOpen] = useState(false);
+  const [editingMusicPart, setEditingMusicPart] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
   const [assigningPartData, setAssigningPartData] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
   const [selectedPartDetails, setSelectedPartDetails] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -766,7 +767,10 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                       <p className="text-xs text-slate-500 italic mt-0.5">{item.composer}</p>
                     </div>
 
-                    <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
+                    <div className="mt-4 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 min-h-24 flex items-center justify-center">
+                      {item.fileUrl.startsWith('data:image/') ? <img src={item.fileUrl} alt="Sheet music score" loading="eager" className="w-full max-h-80 object-contain bg-white" /> : item.fileUrl.startsWith('data:text/html') ? <div className="p-4 text-center text-xs text-slate-600">Multiple score pages are ready to open.</div> : <div className="p-4 text-xs text-slate-500">Score preview</div>}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
                       <a
                         href={item.fileUrl}
                         target="_blank"
@@ -774,7 +778,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                         className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Open PDF</span>
+                        <span>Open Sheet Music</span>
                       </a>
 
                     </div>
@@ -1670,6 +1674,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                               <span className="ml-2 text-[10px] text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity">Click for details</span>
                             </button>
                             <div className="flex items-center gap-2">
+                              <button type="button" onClick={() => setEditingMusicPart({ part, song })} className="px-2.5 py-1 text-xs rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold">Edit Part</button>
                               <button
                                 onClick={() => setAssigningPartData({ part, song })}
                                 className="px-2.5 py-1 text-xs rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold"
@@ -1725,6 +1730,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         isOpen={isUploadMusicOpen}
         onClose={() => setIsUploadMusicOpen(false)}
       />
+
+      {editingMusicPart && <UploadMusicModal isOpen={true} editingPart={editingMusicPart.part} editingSong={editingMusicPart.song} onClose={() => setEditingMusicPart(null)} />}
 
       {selectedPartDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
