@@ -6,22 +6,23 @@ import { useBandData } from '../context/BandDataContext';
 interface UploadMusicModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editingPart?: import('../types/database').SongPart;
+  editingSong?: import('../types/database').SheetMusic;
 }
 
-export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onClose }) => {
-  const { sheetMusic, profiles, addSongWithPart, addSongPart } = useBandData();
+export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onClose, editingPart, editingSong }) => {
+  const { sheetMusic, profiles, addSongWithPart, addSongPart, updateSongPart } = useBandData();
 
   const [mode, setMode] = useState<'new_song' | 'existing_song'>('new_song');
-  const [selectedSongId, setSelectedSongId] = useState<string>(sheetMusic[0]?.id || '');
+  const [selectedSongId, setSelectedSongId] = useState<string>(editingSong?.id || sheetMusic[0]?.id || '');
   const [title, setTitle] = useState('');
   const [composer, setComposer] = useState('');
-  const [partName, setPartName] = useState(STANDARD_INSTRUMENTS[0]);
-  const [customPartName, setCustomPartName] = useState('');
+  const [selectedInstruments, setSelectedInstruments] = useState<string[]>(editingPart ? editingPart.instrument_part.split(',').map(x => x.trim()).filter(Boolean) : [STANDARD_INSTRUMENTS[0]]);
+  const [customPartName, setCustomPartName] = useState(editingPart?.part_name || '');
   const [fileUrl, setFileUrl] = useState('');
   const [isImageFile, setIsImageFile] = useState(false);
   const [selectedCadetIds, setSelectedCadetIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   if (!isOpen) return null;
@@ -35,7 +36,6 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setSelectedFiles(files);
-    setFileName(files.map(file => file.name).join(', '));
     setIsImageFile(files.length === 1 && files[0].type.startsWith('image/'));
     setFileUrl('');
   };
@@ -43,9 +43,11 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const readFileAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read file'));
-    reader.onerror = () => reject(new Error('Could not read ' + file.name));
+    reader.onerror = () => reject(new Error('Could not read uploaded file'));
     reader.readAsDataURL(file);
   });
+
+  const toggleInstrument = (instrument: string) => setSelectedInstruments(prev => prev.includes(instrument) ? prev.filter(x => x !== instrument) : [...prev, instrument]);
 
   const buildCombinedScore = async (): Promise<string> => {
     if (selectedFiles.length === 1) return readFileAsDataUrl(selectedFiles[0]);
@@ -61,8 +63,9 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    if (selectedFiles.length === 0 && !fileUrl) {
+    try {
+    if (selectedInstruments.length === 0) { alert('Select at least one instrument'); return; }
+    if (selectedFiles.length === 0 && !fileUrl && !editingPart) {
       alert('Please select a PDF or image file');
       setIsSubmitting(false);
       return;
@@ -74,20 +77,26 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         setIsSubmitting(false);
         return;
       }
-      const combinedFile = await buildCombinedScore();
-      await addSongWithPart(title, composer, partName, customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
+      const combinedFile = selectedFiles.length ? await buildCombinedScore() : fileUrl;
+      await addSongWithPart(title, composer, selectedInstruments.join(', '), customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
     } else {
       if (!selectedSongId) {
         alert('Please choose an existing song');
         setIsSubmitting(false);
         return;
       }
-      const combinedFile = await buildCombinedScore();
-      await addSongPart(selectedSongId, partName, customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
+      const combinedFile = selectedFiles.length ? await buildCombinedScore() : (editingPart?.file_url || fileUrl);
+      if (editingPart) await updateSongPart(editingPart.id, { instrument_part: selectedInstruments.join(', '), part_name: customPartName.trim() || 'Main Part', file_url: combinedFile });
+      else await addSongPart(selectedSongId, selectedInstruments.join(', '), customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
     }
 
-    setIsSubmitting(false);
     onClose();
+    } catch (error) {
+      console.error('Music upload failed:', error);
+      alert(error instanceof Error ? error.message : 'The music could not be saved. Try a smaller image or PDF.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const memberProfiles = profiles.filter(
@@ -104,7 +113,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Upload Sheet Music & Song Part</h3>
+              <h3 className="text-sm font-bold text-slate-900">{editingPart ? 'Edit Music Part' : 'Upload Sheet Music & Song Part'}</h3>
               <p className="text-xs text-slate-500">888 Avenger Squadron Repertoire</p>
             </div>
           </div>
@@ -117,7 +126,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Mode Selector */}
-        <div className="px-6 pt-3 pb-2 bg-slate-50 flex gap-2 border-b border-slate-200 text-xs">
+        {!editingPart && <div className="px-6 pt-3 pb-2 bg-slate-50 flex gap-2 border-b border-slate-200 text-xs">
           <button
             type="button"
             onClick={() => setMode('new_song')}
@@ -142,9 +151,11 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
           </button>
         </div>
 
+        </div>}
+
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
-          {mode === 'new_song' ? (
+          {!editingPart && mode === 'new_song' ? (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-medium text-slate-700 mb-1">Song Title *</label>
@@ -168,7 +179,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
                 />
               </div>
             </div>
-          ) : (
+          ) : !editingPart ? (
             <div>
               <label className="block font-medium text-slate-700 mb-1">Select Song</label>
               <select
@@ -186,20 +197,11 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
           )}
 
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Instrument *</label>
-            <div className="flex gap-2">
-              <select
-                value={partName}
-                onChange={e => setPartName(e.target.value)}
-                className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-              >
-                {STANDARD_INSTRUMENTS.map(i => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
+            <label className="block font-medium text-slate-700 mb-2">Instrument(s) * — select all that apply</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              {STANDARD_INSTRUMENTS.map(instrument => <label key={instrument} className="flex items-center gap-2 text-xs text-slate-700"><input type="checkbox" checked={selectedInstruments.includes(instrument)} onChange={() => toggleInstrument(instrument)} />{instrument}</label>)}
             </div>
+            <p className="text-[10px] text-slate-500 mt-1">Selected: {selectedInstruments.join(', ') || 'None'}</p>
           </div>
 
           <div>
@@ -228,7 +230,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
                 <FileText className="w-7 h-7 text-sky-600 mx-auto mb-1.5" />
               )}
               <p className="font-semibold text-slate-800">
-                {fileName ? fileName : 'Choose PDF(s) or photo(s)'}
+                {selectedFiles.length ? `${selectedFiles.length} file(s) selected` : editingPart ? 'Keep existing score or choose replacement files' : 'Choose PDF(s) or photo(s)'}
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Select one or multiple files: PDF, PNG, JPG, JPEG, WebP · <code className="text-sky-700">sheet-music</code>
@@ -316,7 +318,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
               disabled={isSubmitting}
               className="px-4 py-2 font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-colors shadow-sm disabled:opacity-50"
             >
-              {isSubmitting ? 'Uploading...' : 'Save & Assign Part'}
+              {isSubmitting ? 'Saving...' : editingPart ? 'Save Part Changes' : 'Save & Assign Part'}
             </button>
           </div>
         </form>
