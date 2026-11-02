@@ -31,6 +31,7 @@ import {
   KeyRound,
   Copy,
   Lock,
+  Printer,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBandData } from '../context/BandDataContext';
@@ -434,6 +435,27 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     setTimeout(() => setCopiedResetLink(false), 2500);
   };
 
+  const handlePrintSheetMusic = (fileUrl: string) => {
+    const printWindow = window.open(fileUrl, '_blank');
+    if (!printWindow) {
+      window.alert('Please allow pop-ups for this site to print your sheet music.');
+      return;
+    }
+    const triggerPrint = () => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (error) {
+        window.alert('The score could not be opened for printing. Please use Open Sheet Music and print from the viewer.');
+      }
+    };
+    printWindow.addEventListener('load', triggerPrint, { once: true });
+    // Some data URLs finish loading before the load listener is attached.
+    if (printWindow.document.readyState === 'complete') {
+      window.setTimeout(triggerPrint, 250);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!deleteConfirmItem) return;
     const { type, id, title } = deleteConfirmItem;
@@ -780,7 +802,15 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>Open Sheet Music</span>
                       </a>
-
+                      <button
+                        type="button"
+                        onClick={() => handlePrintSheetMusic(item.fileUrl)}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors"
+                        title="Print sheet music"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Print</span>
+                      </button>
                     </div>
                   </div>
                 ))}
