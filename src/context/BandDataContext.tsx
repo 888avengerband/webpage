@@ -99,6 +99,7 @@ interface BandDataContextType {
 
   // State
   isLoading: boolean;
+  isLiveSupabase: boolean;
   activeRehearsalDate: string;
   setActiveRehearsalDate: (date: string) => void;
   rehearsalDates: string[];
@@ -543,15 +544,13 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (assignedCadetIds?.length) {
         const rows = assignedCadetIds.map(profile_id => ({ song_part_id: part.id, profile_id }));
-        const { error } = await supabase.from('part_assignments').insert(rows);
+        const { data: insertedAssignments, error } = await supabase.from('part_assignments').insert(rows).select();
         if (error) {
           console.error('Failed to assign musicians to new part:', error);
           await supabase.from('sheet_music').delete().eq('id', song.id);
           return false;
         }
-        setPartAssignments(prev => [...prev, ...rows.map((row, index) => ({
-          ...row, id: `pending-${part.id}-${index}`, created_at: new Date().toISOString()
-        }))]);
+        setPartAssignments(prev => [...prev, ...((insertedAssignments || []) as PartAssignment[])]);
       }
       setSheetMusic(prev => [song as SheetMusic, ...prev]);
       setSongParts(prev => [...prev, part as SongPart]);
@@ -1134,6 +1133,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateExcusedAbsence,
         upsertExcusedAbsence,
         isLoading,
+        isLiveSupabase,
         activeRehearsalDate,
         setActiveRehearsalDate,
         rehearsalDates,
