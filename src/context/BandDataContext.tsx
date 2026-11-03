@@ -193,6 +193,22 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           } else if (calendarData) {
             setCalendarEvents(calendarData as CalendarEvent[]);
           }
+
+          // Load the shared music catalogue and assignments from Supabase.
+          const [musicResult, partsResult, assignmentsResult] = await Promise.all([
+            supabase.from('sheet_music').select('*').order('title', { ascending: true }),
+            supabase.from('song_parts').select('*'),
+            supabase.from('part_assignments').select('*'),
+          ]);
+
+          if (musicResult.error) console.warn('Supabase sheet music fetch warning:', musicResult.error);
+          else if (musicResult.data) setSheetMusic(musicResult.data as SheetMusic[]);
+
+          if (partsResult.error) console.warn('Supabase song parts fetch warning:', partsResult.error);
+          else if (partsResult.data) setSongParts(partsResult.data as SongPart[]);
+
+          if (assignmentsResult.error) console.warn('Supabase part assignments fetch warning:', assignmentsResult.error);
+          else if (assignmentsResult.data) setPartAssignments(assignmentsResult.data as PartAssignment[]);
         } catch (err) {
           console.warn('Supabase data sync error:', err);
         }
@@ -424,39 +440,59 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     assignedCadetIds?: string[]
   ): Promise<boolean> => {
     if (!isAdmin) return false;
+    const supabase = getSupabaseClient();
+
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { data: song, error: songError } = await supabase
+        .from('sheet_music')
+        .insert([{ title: title.trim(), composer: composer.trim() || 'Arranged for 888 Avenger Band' }])
+        .select()
+        .single();
+      if (songError || !song) {
+        console.error('Failed to create sheet music piece:', songError);
+        return false;
+      }
+
+      const { data: part, error: partError } = await supabase
+        .from('song_parts')
+        .insert([{ song_id: song.id, instrument_part: instrument.trim(), part_name: partName.trim(), file_url: fileUrl.trim() }])
+        .select()
+        .single();
+      if (partError || !part) {
+        console.error('Failed to create sheet music part:', partError);
+        await supabase.from('sheet_music').delete().eq('id', song.id);
+        return false;
+      }
+
+      if (assignedCadetIds?.length) {
+        const rows = assignedCadetIds.map(profile_id => ({ song_part_id: part.id, profile_id }));
+        const { error } = await supabase.from('part_assignments').insert(rows);
+        if (error) {
+          console.error('Failed to assign musicians to new part:', error);
+          await supabase.from('sheet_music').delete().eq('id', song.id);
+          return false;
+        }
+        setPartAssignments(prev => [...prev, ...rows.map((row, index) => ({
+          ...row, id: `pending-${part.id}-${index}`, created_at: new Date().toISOString()
+        }))]);
+      }
+      setSheetMusic(prev => [song as SheetMusic, ...prev]);
+      setSongParts(prev => [...prev, part as SongPart]);
+      return true;
+    }
 
     const newSongId = `song-${Date.now().toString(36)}`;
     const newPartId = `part-${Date.now().toString(36)}`;
-
-    const newSong: SheetMusic = {
-      id: newSongId,
-      title: title.trim(),
-      composer: composer.trim() || 'Arranged for 888 Avenger Band',
-      created_at: new Date().toISOString(),
-    };
-
-    const newPart: SongPart = {
-      id: newPartId,
-      song_id: newSongId,
-      instrument_part: instrument.trim(),
-      part_name: partName.trim(),
-      file_url: fileUrl.trim(),
-      created_at: new Date().toISOString(),
-    };
-
+    const newSong: SheetMusic = { id: newSongId, title: title.trim(), composer: composer.trim() || 'Arranged for 888 Avenger Band', created_at: new Date().toISOString() };
+    const newPart: SongPart = { id: newPartId, song_id: newSongId, instrument_part: instrument.trim(), part_name: partName.trim(), file_url: fileUrl.trim(), created_at: new Date().toISOString() };
     setSheetMusic(prev => [newSong, ...prev]);
     setSongParts(prev => [...prev, newPart]);
-
-    if (assignedCadetIds && assignedCadetIds.length > 0) {
+    if (assignedCadetIds?.length) {
       const newAssignments: PartAssignment[] = assignedCadetIds.map(cadetId => ({
-        id: `pa-${Date.now().toString(36)}-${cadetId.slice(-4)}`,
-        song_part_id: newPartId,
-        profile_id: cadetId,
-        created_at: new Date().toISOString(),
+        id: `pa-${Date.now().toString(36)}-${cadetId.slice(-4)}`, song_part_id: newPartId, profile_id: cadetId, created_at: new Date().toISOString(),
       }));
       setPartAssignments(prev => [...prev, ...newAssignments]);
     }
-
     return true;
   };
 
@@ -468,34 +504,52 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     assignedCadetIds?: string[]
   ): Promise<boolean> => {
     if (!isAdmin) return false;
-
+    const supabase = getSupabaseClient();
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { data: part, error } = await supabase.from('song_parts')
+        .insert([{ song_id: songId, instrument_part: instrument.trim(), part_name: partName.trim(), file_url: fileUrl.trim() }])
+        .select().single();
+      if (error || !part) {
+        console.error('Failed to create sheet music part:', error);
+        return false;
+      }
+      if (assignedCadetIds?.length) {
+        const { error: assignmentError } = await supabase.from('part_assignments')
+          .insert(assignedCadetIds.map(profile_id => ({ song_part_id: part.id, profile_id })));
+        if (assignmentError) {
+          console.error('Failed to assign musicians:', assignmentError);
+          await supabase.from('song_parts').delete().eq('id', part.id);
+          return false;
+        }
+      }
+      setSongParts(prev => [...prev, part as SongPart]);
+      if (assignedCadetIds?.length) {
+        const { data } = await supabase.from('part_assignments').select('*').eq('song_part_id', part.id);
+        if (data) setPartAssignments(prev => [...prev, ...(data as PartAssignment[])]);
+      }
+      return true;
+    }
     const newPartId = `part-${Date.now().toString(36)}`;
-    const newPart: SongPart = {
-      id: newPartId,
-      song_id: songId,
-      instrument_part: instrument.trim(),
-      part_name: partName.trim(),
-      file_url: fileUrl.trim(),
-      created_at: new Date().toISOString(),
-    };
-
+    const newPart: SongPart = { id: newPartId, song_id: songId, instrument_part: instrument.trim(), part_name: partName.trim(), file_url: fileUrl.trim(), created_at: new Date().toISOString() };
     setSongParts(prev => [...prev, newPart]);
-
-    if (assignedCadetIds && assignedCadetIds.length > 0) {
+    if (assignedCadetIds?.length) {
       const newAssignments: PartAssignment[] = assignedCadetIds.map(cadetId => ({
-        id: `pa-${Date.now().toString(36)}-${cadetId.slice(-4)}`,
-        song_part_id: newPartId,
-        profile_id: cadetId,
-        created_at: new Date().toISOString(),
+        id: `pa-${Date.now().toString(36)}-${cadetId.slice(-4)}`, song_part_id: newPartId, profile_id: cadetId, created_at: new Date().toISOString(),
       }));
       setPartAssignments(prev => [...prev, ...newAssignments]);
     }
-
     return true;
   };
 
   const updateSheetMusic = async (id: string, updates: Partial<Pick<SheetMusic, 'title' | 'composer'>>): Promise<boolean> => {
     if (!isAdmin) return false;
+    const supabase = getSupabaseClient();
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { data, error } = await supabase.from('sheet_music').update(updates).eq('id', id).select().single();
+      if (error || !data) { console.error('Failed to update piece details:', error); return false; }
+      setSheetMusic(prev => prev.map(song => song.id === id ? data as SheetMusic : song));
+      return true;
+    }
     setSheetMusic(prev => {
       const next = prev.map(song => song.id === id ? { ...song, ...updates } : song);
       saveToStorage('sheet_music', next);
@@ -506,6 +560,13 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateSongPart = async (id: string, updates: Partial<Pick<SongPart, 'instrument_part' | 'part_name' | 'file_url'>>): Promise<boolean> => {
     if (!isAdmin) return false;
+    const supabase = getSupabaseClient();
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { data, error } = await supabase.from('song_parts').update(updates).eq('id', id).select().single();
+      if (error || !data) { console.error('Failed to update song part:', error); return false; }
+      setSongParts(prev => prev.map(part => part.id === id ? data as SongPart : part));
+      return true;
+    }
     setSongParts(prev => {
       const next = prev.map(part => part.id === id ? { ...part, ...updates } : part);
       saveToStorage('song_parts', next);
@@ -517,20 +578,32 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const assignCadetsToPart = async (songPartId: string, profileIds: string[]): Promise<boolean> => {
     if (!isAdmin) return false;
 
-    // Filter out existing assignments for this part
+    const supabase = getSupabaseClient();
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { error: deleteError } = await supabase.from('part_assignments').delete().eq('song_part_id', songPartId);
+      if (deleteError) { console.error('Failed to replace part assignments:', deleteError); return false; }
+      if (profileIds.length) {
+        const { error } = await supabase.from('part_assignments').insert(profileIds.map(profile_id => ({ song_part_id: songPartId, profile_id })));
+        if (error) { console.error('Failed to save part assignments:', error); return false; }
+      }
+      const { data } = await supabase.from('part_assignments').select('*').eq('song_part_id', songPartId);
+      setPartAssignments(prev => [...prev.filter(pa => pa.song_part_id !== songPartId), ...((data || []) as PartAssignment[])]);
+      return true;
+    }
     const otherAssignments = partAssignments.filter(pa => pa.song_part_id !== songPartId);
     const newAssignments: PartAssignment[] = profileIds.map(pId => ({
-      id: `pa-${Date.now().toString(36)}-${pId.slice(-4)}`,
-      song_part_id: songPartId,
-      profile_id: pId,
-      created_at: new Date().toISOString(),
+      id: `pa-${Date.now().toString(36)}-${pId.slice(-4)}`, song_part_id: songPartId, profile_id: pId, created_at: new Date().toISOString(),
     }));
-
     setPartAssignments([...otherAssignments, ...newAssignments]);
     return true;
   };
 
   const deleteSong = async (id: string): Promise<boolean> => {
+    const supabase = getSupabaseClient();
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { error } = await supabase.from('sheet_music').delete().eq('id', id);
+      if (error) { console.error('Failed to delete sheet music piece:', error); return false; }
+    }
     const partIds = songParts.filter(sp => sp.song_id === id).map(sp => sp.id);
 
     setSheetMusic(prev => {
@@ -552,6 +625,11 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const deleteSongPart = async (id: string): Promise<boolean> => {
+    const supabase = getSupabaseClient();
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { error } = await supabase.from('song_parts').delete().eq('id', id);
+      if (error) { console.error('Failed to delete sheet music part:', error); return false; }
+    }
     setSongParts(prev => {
       const next = prev.filter(sp => sp.id !== id);
       saveToStorage('song_parts', next);
