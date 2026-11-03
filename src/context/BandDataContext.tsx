@@ -228,7 +228,43 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 let sharedFileUrl = oldPart.file_url;
                 if (sharedFileUrl.startsWith('data:')) {
                   const response = await fetch(sharedFileUrl);
-                  const blob = await response.blob();
+                  let blob = await response.blob();
+                  if (blob.type === 'text/html') {
+                    const documentText = await blob.text();
+                    const parsed = new DOMParser().parseFromString(documentText, 'text/html');
+                    const embeddedUrls = new Map<string, string>();
+                    const embeddedElements = Array.from(parsed.querySelectorAll('img[src^="data:"], iframe[src^="data:"], a[href^="data:"]'));
+                    for (const element of embeddedElements) {
+                      const attribute = element.tagName.toLowerCase() === 'a' ? 'href' : 'src';
+                      const embeddedUrl = element.getAttribute(attribute);
+                      if (!embeddedUrl) continue;
+                      let publicUrl = embeddedUrls.get(embeddedUrl);
+                      if (!publicUrl) {
+                        const embeddedBlob = await (await fetch(embeddedUrl)).blob();
+                        const embeddedExtension = embeddedBlob.type === 'application/pdf' ? 'pdf'
+                          : embeddedBlob.type === 'image/png' ? 'png'
+                          : embeddedBlob.type === 'image/webp' ? 'webp' : 'jpg';
+                        const embeddedPath = `legacy/assets/${Date.now()}-${Math.random().toString(36).slice(2)}.${embeddedExtension}`;
+                        const { error: embeddedUploadError } = await supabase.storage.from('sheet-music').upload(embeddedPath, embeddedBlob, {
+                          contentType: embeddedBlob.type || 'application/octet-stream', cacheControl: '31536000', upsert: false,
+                        });
+                        if (embeddedUploadError) throw embeddedUploadError;
+                        publicUrl = supabase.storage.from('sheet-music').getPublicUrl(embeddedPath).data.publicUrl;
+                        embeddedUrls.set(embeddedUrl, publicUrl);
+                      }
+                      element.setAttribute(attribute, publicUrl);
+                      if (element.tagName.toLowerCase() === 'img') {
+                        element.setAttribute('loading', 'lazy');
+                        element.setAttribute('decoding', 'async');
+                      }
+                      if (element.tagName.toLowerCase() === 'iframe') element.setAttribute('loading', 'lazy');
+                    }
+                    parsed.title = 'Sheet Music';
+                    const style = parsed.createElement('style');
+                    style.textContent = `*{box-sizing:border-box}body{margin:0;background:#eef2f7;color:#17243b;font-family:Inter,ui-sans-serif,system-ui,sans-serif}header{background:linear-gradient(120deg,#101d35,#173e67)!important;color:#fff;padding:28px max(20px,calc((100% - 1040px)/2)) 24px}header h1{font-size:clamp(23px,4vw,34px);font-weight:800;letter-spacing:-.03em;margin:8px 0 6px}header p{color:#d0deed}section{max-width:1000px;margin:18px auto!important;padding:clamp(12px,2vw,22px)!important;border:1px solid #dce4ed;border-radius:16px!important;box-shadow:0 5px 20px #18324d0b!important}section img{display:block;width:100%;height:auto;max-height:calc(100vh - 150px);object-fit:contain}section iframe{width:100%;height:min(88vh,1100px);border:0;border-radius:8px}.page-label{font-size:10px!important;letter-spacing:.15em;font-weight:800;color:#6b829b!important}@media(max-width:600px){header{padding:22px 18px}section{margin:12px!important;border-radius:12px!important}section iframe{height:78vh}}`;
+                    parsed.head.appendChild(style);
+                    blob = new Blob(['<!doctype html>' + parsed.documentElement.outerHTML], { type: 'text/html' });
+                  }
                   const extension = blob.type === 'application/pdf' ? 'pdf'
                     : blob.type === 'text/html' ? 'html'
                     : blob.type === 'image/png' ? 'png'
