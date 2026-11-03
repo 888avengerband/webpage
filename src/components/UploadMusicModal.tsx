@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Upload, Music, FileText, Users, Image as ImageIcon } from 'lucide-react';
 import { STANDARD_INSTRUMENTS } from '../types/database';
 import { useBandData } from '../context/BandDataContext';
+import { getSupabaseClient } from '../lib/supabase';
 
 interface UploadMusicModalProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ interface UploadMusicModalProps {
 }
 
 export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onClose, editingPart, editingSong }) => {
-  const { sheetMusic, profiles, addSongWithPart, addSongPart, updateSongPart, updateSheetMusic } = useBandData();
+  const { sheetMusic, profiles, addSongWithPart, addSongPart, updateSongPart, updateSheetMusic, isLiveSupabase } = useBandData();
 
   const [mode, setMode] = useState<'new_song' | 'existing_song'>('new_song');
   const [selectedSongId, setSelectedSongId] = useState<string>(editingSong?.id || sheetMusic[0]?.id || '');
@@ -65,13 +66,52 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
   const toggleInstrument = (instrument: string) => setSelectedInstruments(prev => prev.includes(instrument) ? prev.filter(x => x !== instrument) : [...prev, instrument]);
 
   const buildCombinedScore = async (): Promise<string> => {
+    const supabase = getSupabaseClient();
+    if (supabase && isLiveSupabase) {
+      const uploadedAssets = await Promise.all(selectedFiles.map(async (file, index) => {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `scores/${Date.now()}-${Math.random().toString(36).slice(2)}-${index}-${safeName}`;
+        const { error } = await supabase.storage.from('sheet-music').upload(path, file, {
+          contentType: file.type,
+          cacheControl: '31536000',
+          upsert: false,
+        });
+        if (error) throw new Error(`Could not upload score file: ${error.message}`);
+        const { data } = supabase.storage.from('sheet-music').getPublicUrl(path);
+        return { type: file.type, url: data.publicUrl };
+      }));
+
+      if (uploadedAssets.length === 1) return uploadedAssets[0].url;
+
+      const sections = uploadedAssets.map((asset, index) => asset.type.startsWith('image/')
+        ? `<section class="score-page"><div class="page-label">PAGE ${String(index + 1).padStart(2, '0')}</div><img loading="lazy" decoding="async" src="${asset.url}" alt="Sheet music page ${index + 1}"></section>`
+        : `<section class="score-page"><div class="page-label">PAGE ${String(index + 1).padStart(2, '0')}</div><iframe loading="lazy" title="Sheet music page ${index + 1}" src="${asset.url}#toolbar=1&navpanes=0"></iframe><a class="open-file" href="${asset.url}" target="_blank" rel="noreferrer">Open PDF in new tab ↗</a></section>`
+      ).join('');
+      const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d35"><title>Sheet Music</title><style>
+        *{box-sizing:border-box}body{margin:0;background:#eef2f7;color:#17243b;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+        .topbar{background:linear-gradient(120deg,#101d35,#173e67);color:#fff;padding:28px max(20px,calc((100% - 1040px)/2)) 24px}
+        .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#9dc9f3;font-weight:800}.topbar h1{font-size:clamp(23px,4vw,34px);line-height:1.15;margin:8px 0 6px;font-weight:800;letter-spacing:-.03em}.topbar p{margin:0;color:#d0deed;font-size:13px}
+        main{max-width:1040px;margin:26px auto;padding:0 18px 48px}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;color:#607087;font-size:12px}.count{font-weight:700;color:#294767}.score-page{background:#fff;border:1px solid #dce4ed;border-radius:16px;padding:clamp(12px,2vw,22px);margin:0 0 18px;box-shadow:0 5px 20px #18324d0b;content-visibility:auto;contain-intrinsic-size:900px}
+        .page-label{font-size:10px;letter-spacing:.15em;font-weight:800;color:#6b829b;margin:0 0 12px}.score-page img{display:block;width:100%;height:auto;max-height:calc(100vh - 150px);object-fit:contain;border-radius:8px}.score-page iframe{display:block;width:100%;height:min(88vh,1100px);border:0;border-radius:8px;background:#f8fafc}.open-file{display:inline-block;margin-top:12px;color:#1768a8;font-size:12px;font-weight:700;text-decoration:none}.open-file:hover{text-decoration:underline}
+        @media(max-width:600px){.topbar{padding:22px 18px}.toolbar{align-items:flex-start;flex-direction:column}.score-page{border-radius:12px;padding:10px}.score-page iframe{height:78vh}}
+      </style></head><body><header class="topbar"><div class="eyebrow">888 Avenger Squadron Band</div><h1>Sheet Music</h1><p>Combined score · ${uploadedAssets.length} sections</p></header><main><div class="toolbar"><span class="count">${uploadedAssets.length} score sections</span><span>Each section is shown in reading order</span></div>${sections}</main></body></html>`;
+      const viewerPath = `viewers/combined-${Date.now()}-${Math.random().toString(36).slice(2)}.html`;
+      const { error: viewerError } = await supabase.storage.from('sheet-music').upload(viewerPath, new Blob([html], { type: 'text/html' }), {
+        contentType: 'text/html',
+        cacheControl: '31536000',
+        upsert: false,
+      });
+      if (viewerError) throw new Error(`Could not publish combined sheet music viewer: ${viewerError.message}`);
+      return supabase.storage.from('sheet-music').getPublicUrl(viewerPath).data.publicUrl;
+    }
+
     if (selectedFiles.length === 1) return readFileAsDataUrl(selectedFiles[0]);
-    const files = await Promise.all(selectedFiles.map(async file => ({ name: file.name, type: file.type, data: await readFileAsDataUrl(file) })));
+    const files = await Promise.all(selectedFiles.map(async file => ({ type: file.type, data: await readFileAsDataUrl(file) })));
     const sections = files.map((file, index) => file.type.startsWith('image/')
-      ? '<section><div class="page-label">Page ' + (index + 1) + '</div><img src="' + file.data + '" alt="Sheet music page ' + (index + 1) + '" /></section>'
-      : '<section><div class="page-label">Page ' + (index + 1) + '</div><iframe title="Sheet music page ' + (index + 1) + '" src="' + file.data + '"></iframe><p><a href="' + file.data + '" target="_blank" rel="noreferrer">Open PDF</a></p></section>'
+      ? `<section class="score-page"><div class="page-label">PAGE ${String(index + 1).padStart(2, '0')}</div><img loading="lazy" decoding="async" src="${file.data}" alt="Sheet music page ${index + 1}"></section>`
+      : `<section class="score-page"><div class="page-label">PAGE ${String(index + 1).padStart(2, '0')}</div><iframe loading="lazy" title="Sheet music page ${index + 1}" src="${file.data}"></iframe></section>`
     ).join('');
-    const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Combined Sheet Music</title><style>body{font-family:system-ui;margin:0;background:#eef2f7;color:#172033}header{padding:16px;background:#0f172a;color:white}section{margin:16px;padding:16px;background:white;border-radius:12px;box-shadow:0 1px 4px #0002}img{max-width:100%;height:auto;max-height:92vh;object-fit:contain;display:block;margin:auto}.page-label{font-size:12px;font-weight:700;color:#64748b;margin-bottom:10px}iframe{width:100%;height:85vh;border:0;background:white}</style></head><body><header><h1>Combined Sheet Music</h1><p>' + files.length + ' files · use the sections below</p></header>' + sections + '</body></html>';
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sheet Music</title><style>*{box-sizing:border-box}body{margin:0;background:#eef2f7;color:#17243b;font-family:system-ui,sans-serif}.topbar{background:linear-gradient(120deg,#101d35,#173e67);color:white;padding:28px max(20px,calc((100% - 1040px)/2))}.topbar h1{margin:8px 0;font-size:30px}.topbar p{margin:0;color:#d0deed}main{max-width:1040px;margin:26px auto;padding:0 18px 48px}.score-page{background:white;border:1px solid #dce4ed;border-radius:16px;padding:18px;margin-bottom:18px;box-shadow:0 5px 20px #18324d0b;content-visibility:auto;contain-intrinsic-size:900px}.page-label{font-size:10px;letter-spacing:.15em;font-weight:800;color:#6b829b;margin-bottom:12px}.score-page img{display:block;width:100%;height:auto;max-height:calc(100vh - 150px);object-fit:contain}.score-page iframe{width:100%;height:85vh;border:0}</style></head><body><header class="topbar"><div>888 AVENGER SQUADRON BAND</div><h1>Sheet Music</h1><p>Combined score · ${files.length} sections</p></header><main>${sections}</main></body></html>`;
     return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
   };
 
