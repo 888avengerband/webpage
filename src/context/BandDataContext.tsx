@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import {
   Profile,
   SheetMusic,
@@ -142,6 +142,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     getVancouverDateString()
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const musicMigrationAttempted = useRef(false);
 
   // Sync Supabase profiles and calendar events into state on mount
   useEffect(() => {
@@ -201,14 +202,90 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             supabase.from('part_assignments').select('*'),
           ]);
 
-          if (musicResult.error) console.warn('Supabase sheet music fetch warning:', musicResult.error);
-          else if (musicResult.data) setSheetMusic(musicResult.data as SheetMusic[]);
+          if (musicResult.error) {
+            console.warn('Supabase sheet music fetch warning:', musicResult.error);
+          } else if (musicResult.data?.length === 0 && isAdmin && !musicMigrationAttempted.current && sheetMusic.length > 0) {
+            // One-time import of the legacy browser catalogue on the first admin login.
+            // Existing data URLs are copied into Storage before the shared rows are created.
+            musicMigrationAttempted.current = true;
+            try {
+              const { data: importedSongs, error: importSongsError } = await supabase
+                .from('sheet_music')
+                .insert(sheetMusic.map(song => ({ title: song.title, composer: song.composer })))
+                .select();
+              if (importSongsError || !importedSongs) throw importSongsError || new Error('Could not import existing pieces.');
 
-          if (partsResult.error) console.warn('Supabase song parts fetch warning:', partsResult.error);
-          else if (partsResult.data) setSongParts(partsResult.data as SongPart[]);
+              const songIdMap = new Map<string, string>();
+              sheetMusic.forEach((song, index) => {
+                if (importedSongs[index]) songIdMap.set(song.id, importedSongs[index].id);
+              });
 
-          if (assignmentsResult.error) console.warn('Supabase part assignments fetch warning:', assignmentsResult.error);
-          else if (assignmentsResult.data) setPartAssignments(assignmentsResult.data as PartAssignment[]);
+              const partRows = [];
+              for (const oldPart of songParts) {
+                const newSongId = songIdMap.get(oldPart.song_id);
+                if (!newSongId) continue;
+                let sharedFileUrl = oldPart.file_url;
+                if (sharedFileUrl.startsWith('data:')) {
+                  const response = await fetch(sharedFileUrl);
+                  const blob = await response.blob();
+                  const extension = blob.type === 'application/pdf' ? 'pdf'
+                    : blob.type === 'text/html' ? 'html'
+                    : blob.type === 'image/png' ? 'png'
+                    : blob.type === 'image/webp' ? 'webp' : 'jpg';
+                  const path = `legacy/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+                  const { error: uploadError } = await supabase.storage.from('sheet-music').upload(path, blob, {
+                    contentType: blob.type || 'application/octet-stream', cacheControl: '31536000', upsert: false,
+                  });
+                  if (uploadError) throw uploadError;
+                  sharedFileUrl = supabase.storage.from('sheet-music').getPublicUrl(path).data.publicUrl;
+                }
+                partRows.push({
+                  oldId: oldPart.id,
+                  row: { song_id: newSongId, instrument_part: oldPart.instrument_part, part_name: oldPart.part_name || 'Main Part', file_url: sharedFileUrl },
+                });
+              }
+
+              const { data: importedParts, error: importPartsError } = partRows.length
+                ? await supabase.from('song_parts').insert(partRows.map(item => item.row)).select()
+                : { data: [], error: null };
+              if (importPartsError || !importedParts) throw importPartsError || new Error('Could not import existing parts.');
+
+              const partIdMap = new Map<string, string>();
+              partRows.forEach((item, index) => {
+                if (importedParts[index]) partIdMap.set(item.oldId, importedParts[index].id);
+              });
+              const validProfileIds = new Set((profileData || []).map(person => person.id));
+              const assignmentRows = partAssignments
+                .filter(item => partIdMap.has(item.song_part_id) && validProfileIds.has(item.profile_id))
+                .map(item => ({ song_part_id: partIdMap.get(item.song_part_id)!, profile_id: item.profile_id }));
+              const { data: importedAssignments, error: importAssignmentsError } = assignmentRows.length
+                ? await supabase.from('part_assignments').insert(assignmentRows).select()
+                : { data: [], error: null };
+              if (importAssignmentsError) throw importAssignmentsError;
+
+              setSheetMusic(importedSongs as SheetMusic[]);
+              setSongParts((importedParts || []) as SongPart[]);
+              setPartAssignments((importedAssignments || []) as PartAssignment[]);
+              console.info('Legacy sheet music catalogue successfully migrated to Supabase.');
+            } catch (migrationError) {
+              musicMigrationAttempted.current = false;
+              console.error('Legacy music migration did not finish. Your browser copy has been preserved:', migrationError);
+            }
+          } else if (musicResult.data) {
+            setSheetMusic(musicResult.data as SheetMusic[]);
+            if (partsResult.data) setSongParts(partsResult.data as SongPart[]);
+            if (assignmentsResult.data) setPartAssignments(assignmentsResult.data as PartAssignment[]);
+          }
+
+          if (musicResult.data?.length === 0 && (!isAdmin || musicMigrationAttempted.current)) {
+            if (musicMigrationAttempted.current && sheetMusic.length > 0) {
+              // Keep the local copy visible if a migration failed partway through.
+            } else {
+              setSheetMusic([]);
+              if (partsResult.data) setSongParts(partsResult.data as SongPart[]);
+              if (assignmentsResult.data) setPartAssignments(assignmentsResult.data as PartAssignment[]);
+            }
+          }
         } catch (err) {
           console.warn('Supabase data sync error:', err);
         }
@@ -216,7 +293,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     syncSupabaseData();
-  }, [isLiveSupabase]);
+  }, [isLiveSupabase, isAdmin, profile?.id]);
 
   // Persist state updates to local store
   useEffect(() => { saveToStorage('profiles', profiles); }, [profiles]);
