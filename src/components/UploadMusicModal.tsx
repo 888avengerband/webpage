@@ -129,7 +129,7 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
     setIsSubmitting(true);
     try {
     if (selectedInstruments.length === 0) { alert('Select at least one instrument'); return; }
-    if (selectedFiles.length === 0 && !fileUrl && !editingPart) {
+    if (selectedFiles.length === 0 && !fileUrl && !editingPart && !isEditingSong) {
       alert('Please select a PDF or image file');
       setIsSubmitting(false);
       return;
