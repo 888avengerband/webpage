@@ -69,16 +69,25 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
     const supabase = getSupabaseClient();
     if (supabase && isLiveSupabase) {
       const uploadedAssets = await Promise.all(selectedFiles.map(async (file, index) => {
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        let uploadBlob: Blob = file;
+        let uploadType = file.type;
+        let uploadName = file.name;
+        if (file.type.startsWith('image/')) {
+          const compressedDataUrl = await readFileAsDataUrl(file);
+          uploadBlob = await (await fetch(compressedDataUrl)).blob();
+          uploadType = 'image/jpeg';
+          uploadName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+        }
+        const safeName = uploadName.replace(/[^a-zA-Z0-9._-]/g, '_');
         const path = `scores/${Date.now()}-${Math.random().toString(36).slice(2)}-${index}-${safeName}`;
-        const { error } = await supabase.storage.from('sheet-music').upload(path, file, {
-          contentType: file.type,
+        const { error } = await supabase.storage.from('sheet-music').upload(path, uploadBlob, {
+          contentType: uploadType,
           cacheControl: '31536000',
           upsert: false,
         });
         if (error) throw new Error(`Could not upload score file: ${error.message}`);
         const { data } = supabase.storage.from('sheet-music').getPublicUrl(path);
-        return { type: file.type, url: data.publicUrl };
+        return { type: uploadType, url: data.publicUrl };
       }));
 
       if (uploadedAssets.length === 1) return uploadedAssets[0].url;
@@ -128,7 +137,8 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
 
     if (isEditingSong) {
       if (!title.trim()) { alert('Please enter a piece title'); return; }
-      await updateSheetMusic(editingSong!.id, { title: title.trim(), composer: composer.trim() || 'Arranged for 888 Avenger Band' });
+      const saved = await updateSheetMusic(editingSong!.id, { title: title.trim(), composer: composer.trim() || 'Arranged for 888 Avenger Band' });
+      if (!saved) throw new Error('The piece details could not be saved to the shared catalogue.');
     } else if (!editingPart && mode === 'new_song') {
       if (!title.trim()) {
         alert('Please enter a song title');
@@ -136,7 +146,8 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         return;
       }
       const combinedFile = selectedFiles.length ? await buildCombinedScore() : fileUrl;
-      await addSongWithPart(title, composer, selectedInstruments.join(', '), customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
+      const saved = await addSongWithPart(title, composer, selectedInstruments.join(', '), customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
+      if (!saved) throw new Error('The new piece could not be saved to the shared catalogue.');
     } else {
       if (!selectedSongId) {
         alert('Please choose an existing song');
@@ -144,8 +155,10 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
         return;
       }
       const combinedFile = selectedFiles.length ? await buildCombinedScore() : (editingPart?.file_url || fileUrl);
-      if (editingPart) await updateSongPart(editingPart.id, { instrument_part: selectedInstruments.join(', '), part_name: customPartName.trim() || 'Main Part', file_url: combinedFile });
-      else await addSongPart(selectedSongId, selectedInstruments.join(', '), customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
+      const saved = editingPart
+        ? await updateSongPart(editingPart.id, { instrument_part: selectedInstruments.join(', '), part_name: customPartName.trim() || 'Main Part', file_url: combinedFile })
+        : await addSongPart(selectedSongId, selectedInstruments.join(', '), customPartName.trim() || 'Main Part', combinedFile, selectedCadetIds);
+      if (!saved) throw new Error('The music part could not be saved to the shared catalogue.');
     }
 
     onClose();
