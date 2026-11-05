@@ -213,7 +213,7 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               // Reuse songs already in Supabase so a previous partial migration
               // never creates duplicate catalogue entries.
               const existingSongs = (musicResult.data || []) as SheetMusic[];
-              const normalizeSongKey = (value: string) => value.trim().toLowerCase().replace(/\\s+/g, ' ');
+              const normalizeSongKey = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
               const songIdMap = new Map<string, string>();
               const songsToInsert: SheetMusic[] = [];
               for (const localSong of sheetMusic) {
