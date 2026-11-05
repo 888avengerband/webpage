@@ -205,21 +205,39 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           if (musicResult.error) {
             console.warn('Supabase sheet music fetch warning:', musicResult.error);
-          } else if (musicResult.data?.length === 0 && isAdmin && !musicMigrationAttempted.current && sheetMusic.length > 0) {
+          } else if (isAdmin && !musicMigrationAttempted.current && sheetMusic.length > 0 && songParts.length > 0 && (musicResult.data?.length === 0 || partsResult.data?.length === 0)) {
             // One-time import of the legacy browser catalogue on the first admin login.
             // Existing data URLs are copied into Storage before the shared rows are created.
             musicMigrationAttempted.current = true;
             try {
-              const { data: importedSongs, error: importSongsError } = await supabase
-                .from('sheet_music')
-                .insert(sheetMusic.map(song => ({ title: song.title, composer: song.composer })))
-                .select();
+              // Reuse songs already in Supabase so a previous partial migration
+              // never creates duplicate catalogue entries.
+              const existingSongs = (musicResult.data || []) as SheetMusic[];
+              const normalizeSongKey = (value: string) => value.trim().toLowerCase().replace(/\\s+/g, ' ');
+              const songIdMap = new Map<string, string>();
+              const songsToInsert: SheetMusic[] = [];
+              for (const localSong of sheetMusic) {
+                const matchingSong = existingSongs.find(remoteSong =>
+                  normalizeSongKey(remoteSong.title) === normalizeSongKey(localSong.title) &&
+                  normalizeSongKey(remoteSong.composer || '') === normalizeSongKey(localSong.composer || '')
+                ) || existingSongs.find(remoteSong =>
+                  normalizeSongKey(remoteSong.title) === normalizeSongKey(localSong.title)
+                );
+                if (matchingSong) songIdMap.set(localSong.id, matchingSong.id);
+                else songsToInsert.push(localSong);
+              }
+
+              const { data: importedSongs, error: importSongsError } = songsToInsert.length
+                ? await supabase.from('sheet_music')
+                    .insert(songsToInsert.map(song => ({ title: song.title, composer: song.composer })))
+                    .select()
+                : { data: [], error: null };
               if (importSongsError || !importedSongs) throw importSongsError || new Error('Could not import existing pieces.');
 
-              const songIdMap = new Map<string, string>();
-              sheetMusic.forEach((song, index) => {
+              songsToInsert.forEach((song, index) => {
                 if (importedSongs[index]) songIdMap.set(song.id, importedSongs[index].id);
               });
+              const allSharedSongs = [...existingSongs, ...((importedSongs || []) as SheetMusic[])];
 
               const partRows = [];
               for (const oldPart of songParts) {
@@ -296,11 +314,15 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 .filter(item => partIdMap.has(item.song_part_id) && validProfileIds.has(item.profile_id))
                 .map(item => ({ song_part_id: partIdMap.get(item.song_part_id)!, profile_id: item.profile_id }));
               const { data: importedAssignments, error: importAssignmentsError } = assignmentRows.length
-                ? await supabase.from('part_assignments').insert(assignmentRows).select()
+                ? await supabase.from('part_assignments')
+                    .upsert(assignmentRows, { onConflict: 'song_part_id,profile_id', ignoreDuplicates: true })
+                    .select()
                 : { data: [], error: null };
-              if (importAssignmentsError) throw importAssignmentsError;
+              if (importAssignmentsError) {
+                console.warn('Music parts were migrated, but some cadet assignments need review:', importAssignmentsError);
+              }
 
-              setSheetMusic(importedSongs as SheetMusic[]);
+              setSheetMusic(allSharedSongs);
               setSongParts((importedParts || []) as SongPart[]);
               setPartAssignments((importedAssignments || []) as PartAssignment[]);
               console.info('Legacy sheet music catalogue successfully migrated to Supabase.');
