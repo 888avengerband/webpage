@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Music,
   Calendar,
@@ -52,6 +52,39 @@ import { AddMemberModal } from './AddMemberModal';
 import { UploadMusicModal } from './UploadMusicModal';
 import { AssignPartModal } from './AssignPartModal';
 import { SquadronCalendarView } from './SquadronCalendarView';
+
+const SheetMusicHtmlPreview: React.FC<{ fileUrl: string; title: string }> = ({ fileUrl, title }) => {
+  const [html, setHtml] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHtml(null);
+    fetch(fileUrl)
+      .then(response => {
+        if (!response.ok) throw new Error(`Could not load sheet music viewer (${response.status}).`);
+        return response.text();
+      })
+      .then(source => {
+        if (!cancelled) setHtml(source);
+      })
+      .catch(error => {
+        console.error('Could not prepare sheet music HTML preview:', error);
+        if (!cancelled) setHtml(null);
+      });
+    return () => { cancelled = true; };
+  }, [fileUrl]);
+
+  return (
+    <iframe
+      title={`Sheet music: ${title}`}
+      src={html === null ? undefined : undefined}
+      srcDoc={html ?? undefined}
+      loading="eager"
+      sandbox="allow-scripts allow-same-origin"
+      className="w-full h-[34rem] bg-white border-0"
+    />
+  );
+};
 
 const getVancouverDateString = (date = new Date()): string => {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
@@ -791,7 +824,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     </div>
 
                     <div className="mt-4 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 min-h-24 flex items-center justify-center">
-                      {item.fileUrl.startsWith('data:image/') || /\.(png|jpe?g|webp)(?:[?#]|$)/i.test(item.fileUrl) ? <img src={item.fileUrl} alt="Sheet music score" loading="eager" decoding="async" className="w-full max-h-[34rem] object-contain bg-white" /> : item.fileUrl.startsWith('data:text/html') || /\.html?(?:[?#]|$)/i.test(item.fileUrl) ? <iframe title={`Sheet music: ${item.title}`} src={item.fileUrl} loading="eager" sandbox="allow-scripts allow-same-origin" className="w-full h-[34rem] bg-white border-0" /> : item.fileUrl.startsWith('data:application/pdf') || /\.pdf(?:[?#]|$)/i.test(item.fileUrl) ? <iframe title={`Sheet music: ${item.title}`} src={item.fileUrl} loading="eager" className="w-full h-[34rem] bg-white border-0" /> : <div className="p-4 text-xs text-slate-500">Score preview unavailable</div>}
+                      {item.fileUrl.startsWith('data:image/') || /\.(png|jpe?g|webp)(?:[?#]|$)/i.test(item.fileUrl) ? <img src={item.fileUrl} alt="Sheet music score" loading="eager" decoding="async" className="w-full max-h-[34rem] object-contain bg-white" /> : item.fileUrl.startsWith('data:text/html') || /\.html?(?:[?#]|$)/i.test(item.fileUrl) ? <SheetMusicHtmlPreview fileUrl={item.fileUrl} title={item.title} /> : item.fileUrl.startsWith('data:application/pdf') || /\.pdf(?:[?#]|$)/i.test(item.fileUrl) ? <iframe title={`Sheet music: ${item.title}`} src={item.fileUrl} loading="eager" className="w-full h-[34rem] bg-white border-0" /> : <div className="p-4 text-xs text-slate-500">Score preview unavailable</div>}
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
                       <a
