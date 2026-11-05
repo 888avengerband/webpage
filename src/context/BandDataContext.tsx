@@ -205,7 +205,20 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           if (musicResult.error) {
             console.warn('Supabase sheet music fetch warning:', musicResult.error);
-          } else if (isAdmin && !musicMigrationAttempted.current && sheetMusic.length > 0 && songParts.length > 0 && (musicResult.data?.length === 0 || partsResult.data?.length === 0)) {
+          }
+          if (partsResult.error) {
+            console.warn('Supabase song parts fetch warning:', partsResult.error);
+          }
+          console.info('Music migration check:', {
+            isAdmin,
+            alreadyAttempted: musicMigrationAttempted.current,
+            localSongs: sheetMusic.length,
+            localParts: songParts.length,
+            remoteSongs: musicResult.data?.length ?? 'fetch failed',
+            remoteParts: partsResult.data?.length ?? 'fetch failed',
+            partsFetchError: partsResult.error?.message ?? null,
+          });
+          if (!musicResult.error && isAdmin && !musicMigrationAttempted.current && sheetMusic.length > 0 && songParts.length > 0 && (musicResult.data?.length === 0 || !partsResult.data || partsResult.data.length === 0)) {
             // One-time import of the legacy browser catalogue on the first admin login.
             // Existing data URLs are copied into Storage before the shared rows are created.
             musicMigrationAttempted.current = true;
