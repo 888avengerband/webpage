@@ -468,6 +468,38 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     setTimeout(() => setCopiedResetLink(false), 2500);
   };
 
+  const handleOpenSheetMusic = async (fileUrl: string) => {
+    // Open a blank tab immediately so the browser does not block it after the fetch.
+    const viewerWindow = window.open('about:blank', '_blank');
+    if (!viewerWindow) {
+      window.alert('Please allow pop-ups for this site to open your sheet music.');
+      return;
+    }
+
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error(`Could not load sheet music (${response.status}).`);
+      const sourceBlob = await response.blob();
+      const isHtmlUrl = fileUrl.startsWith('data:text/html') || /\\.html?(?:[?#]|$)/i.test(fileUrl);
+      const isPdfUrl = fileUrl.startsWith('data:application/pdf') || /\\.pdf(?:[?#]|$)/i.test(fileUrl);
+      let viewerBlob = sourceBlob;
+
+      if (isHtmlUrl || sourceBlob.type === 'text/html') {
+        viewerBlob = new Blob([await sourceBlob.text()], { type: 'text/html;charset=utf-8' });
+      } else if (isPdfUrl || sourceBlob.type === 'application/pdf') {
+        viewerBlob = new Blob([sourceBlob], { type: 'application/pdf' });
+      }
+
+      const viewerUrl = URL.createObjectURL(viewerBlob);
+      viewerWindow.location.href = viewerUrl;
+      window.setTimeout(() => URL.revokeObjectURL(viewerUrl), 60000);
+    } catch (error) {
+      console.error('Could not open sheet music:', error);
+      viewerWindow.close();
+      window.alert('The sheet music could not be opened. Please try again or contact a band senior.');
+    }
+  };
+
   const handlePrintSheetMusic = (fileUrl: string) => {
     const printWindow = window.open(fileUrl, '_blank');
     if (!printWindow) {
@@ -826,15 +858,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                       {item.fileUrl.startsWith('data:image/') || /\.(png|jpe?g|webp)(?:[?#]|$)/i.test(item.fileUrl) ? <img src={item.fileUrl} alt="Sheet music score" loading="eager" decoding="async" className="w-full max-h-[34rem] object-contain bg-white" /> : item.fileUrl.startsWith('data:text/html') || /\.html?(?:[?#]|$)/i.test(item.fileUrl) ? <SheetMusicHtmlPreview fileUrl={item.fileUrl} title={item.title} /> : item.fileUrl.startsWith('data:application/pdf') || /\.pdf(?:[?#]|$)/i.test(item.fileUrl) ? <iframe title={`Sheet music: ${item.title}`} src={item.fileUrl} loading="eager" className="w-full h-[34rem] bg-white border-0" /> : <div className="p-4 text-xs text-slate-500">Score preview unavailable</div>}
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                      <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => handleOpenSheetMusic(item.fileUrl)}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>Open Sheet Music</span>
-                      </a>
+                      </button>
                       <button
                         type="button"
                         onClick={() => handlePrintSheetMusic(item.fileUrl)}
@@ -1069,15 +1100,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     </div>
 
                     <div className="mt-5 pt-3 border-t border-slate-100 flex items-center gap-2">
-                      <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => handleOpenSheetMusic(item.fileUrl)}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         <span>Open PDF</span>
-                      </a>
+                      </button>
 
                     </div>
                   </div>
@@ -1855,14 +1885,13 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   <p className="text-xs font-semibold text-slate-700">Part Preview</p>
                   <p className="text-[10px] text-slate-400">Open the uploaded PDF to see exactly what this part looks like.</p>
                 </div>
-                <a
-                  href={selectedPartDetails.part.file_url}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => handleOpenSheetMusic(selectedPartDetails.part.file_url)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Open PDF
-                </a>
+                </button>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex flex-wrap justify-between gap-2">
