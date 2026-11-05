@@ -479,15 +479,31 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     try {
       const response = await fetch(fileUrl);
       if (!response.ok) throw new Error(`Could not load sheet music (${response.status}).`);
-      const sourceBlob = await response.blob();
-      const isHtmlUrl = fileUrl.startsWith('data:text/html') || /\\.html?(?:[?#]|$)/i.test(fileUrl);
-      const isPdfUrl = fileUrl.startsWith('data:application/pdf') || /\\.pdf(?:[?#]|$)/i.test(fileUrl);
-      let viewerBlob = sourceBlob;
 
-      if (isHtmlUrl || sourceBlob.type === 'text/html') {
-        viewerBlob = new Blob([await sourceBlob.text()], { type: 'text/html;charset=utf-8' });
-      } else if (isPdfUrl || sourceBlob.type === 'application/pdf') {
+      const sourceBlob = await response.blob();
+      const contentType = response.headers.get('content-type') || sourceBlob.type || '';
+      const isPdfUrl = fileUrl.startsWith('data:application/pdf') || /\.pdf(?:[?#]|$)/i.test(fileUrl);
+      const isPdf = isPdfUrl || contentType.includes('application/pdf');
+      const isImage = contentType.startsWith('image/');
+
+      let viewerBlob: Blob;
+      if (isPdf) {
         viewerBlob = new Blob([sourceBlob], { type: 'application/pdf' });
+      } else if (isImage) {
+        viewerBlob = sourceBlob;
+      } else {
+        // Some older Storage uploads were saved as text/plain. Detect HTML by its
+        // contents and override the incorrect MIME type so the browser renders it.
+        const rawText = await sourceBlob.text();
+        const looksLikeHtml = /^\\uFEFF?\\s*(?:<!doctype\\s+html|<html[\\s>])/i.test(rawText);
+        const isHtml = fileUrl.startsWith('data:text/html') ||
+          /\.html?(?:[?#]|$)/i.test(fileUrl) ||
+          contentType.includes('text/html') ||
+          looksLikeHtml;
+
+        viewerBlob = new Blob([rawText], {
+          type: isHtml ? 'text/html;charset=utf-8' : (contentType || 'text/plain;charset=utf-8')
+        });
       }
 
       const viewerUrl = URL.createObjectURL(viewerBlob);
