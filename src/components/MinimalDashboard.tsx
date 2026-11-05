@@ -77,7 +77,6 @@ const SheetMusicHtmlPreview: React.FC<{ fileUrl: string; title: string }> = ({ f
   return (
     <iframe
       title={`Sheet music: ${title}`}
-      src={html === null ? undefined : undefined}
       srcDoc={html ?? undefined}
       loading="eager"
       sandbox="allow-scripts allow-same-origin"
