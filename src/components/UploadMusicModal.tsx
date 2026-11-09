@@ -35,6 +35,20 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
     );
   };
 
+  const handleAutoAssign = () => {
+    const selected = selectedInstruments.map(instrument => instrument.trim().toLocaleLowerCase());
+    const matchingCadetIds = memberProfiles
+      .filter(cadet => {
+        const cadetInstruments = (cadet.instrument || '')
+          .split(/[,;|]/)
+          .map(instrument => instrument.trim().toLocaleLowerCase())
+          .filter(Boolean);
+        return cadetInstruments.some(instrument => selected.includes(instrument));
+      })
+      .map(cadet => cadet.id);
+    setSelectedCadetIds(matchingCadetIds);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setSelectedFiles(files);
@@ -325,7 +339,16 @@ export const UploadMusicModal: React.FC<UploadMusicModalProps> = ({ isOpen, onCl
                 <Users className="w-3.5 h-3.5 text-sky-600" />
                 Assign Part to Cadets ({selectedCadetIds.length} selected)
               </label>
-              <div className="flex gap-2 text-[11px]">
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <button
+                  type="button"
+                  onClick={handleAutoAssign}
+                  disabled={selectedInstruments.length === 0}
+                  className="text-emerald-700 font-semibold hover:underline disabled:opacity-40 disabled:no-underline"
+                >
+                  Auto-Assign Matches
+                </button>
+                <span className="text-slate-300">·</span>
                 <button
                   type="button"
                   onClick={() => setSelectedCadetIds(memberProfiles.map(p => p.id))}
