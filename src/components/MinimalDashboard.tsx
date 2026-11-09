@@ -1783,9 +1783,12 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                         return (
                           <div key={part.id} className="py-2.5 flex items-center justify-between text-xs">
                             <button type="button" onClick={() => setSelectedPartDetails({ part, song })} className="text-left flex-1 min-w-0 group" title="Click to view assigned musicians and preview this part">
-                              <span className="font-semibold text-slate-900 group-hover:text-sky-700 group-hover:underline transition-colors">{part.instrument_part}</span>
-                              <span className="ml-2 text-[11px] text-slate-400">
-                                ({assignments.length} cadet{assignments.length === 1 ? '' : 's'} assigned)
+                              <span className="block font-semibold text-slate-900 group-hover:text-sky-700 group-hover:underline transition-colors">{part.instrument_part}</span>
+                              <span className="block mt-0.5 text-[11px] text-slate-600">
+                                Part name: {part.part_name || 'Main Part'}
+                              </span>
+                              <span className="block mt-0.5 text-[11px] text-slate-400">
+                                {assignments.length} cadet{assignments.length === 1 ? '' : 's'} assigned
                               </span>
                               <span className="ml-2 text-[10px] text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity">Click for details</span>
                             </button>
