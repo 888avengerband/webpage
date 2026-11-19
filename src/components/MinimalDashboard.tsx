@@ -52,6 +52,7 @@ import { AddMemberModal } from './AddMemberModal';
 import { UploadMusicModal } from './UploadMusicModal';
 import { AssignPartModal } from './AssignPartModal';
 import { SquadronCalendarView } from './SquadronCalendarView';
+import { MROSection } from './MROSection';
 
 const SheetMusicHtmlPreview: React.FC<{ fileUrl: string; title: string }> = ({ fileUrl, title }) => {
   const [html, setHtml] = useState<string | null>(null);
@@ -146,8 +147,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   } = useBandData();
 
   // Active sub-tab depending on role
-  const [memberTab, setMemberTab] = useState<'locker' | 'calendar' | 'attendance' | 'absence' | 'profile'>('locker');
-  const [adminTab, setAdminTab] = useState<'rollcall' | 'calendar' | 'roster' | 'music' | 'my-parts' | 'profile'>('rollcall');
+  const [memberTab, setMemberTab] = useState<'locker' | 'mros' | 'calendar' | 'attendance' | 'absence' | 'profile'>('locker');
+  const [adminTab, setAdminTab] = useState<'rollcall' | 'calendar' | 'roster' | 'music' | 'my-parts' | 'mros' | 'profile'>('rollcall');
 
   // Delete Confirmation Modal State (Reliable in-app confirmation)
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<{
@@ -753,6 +754,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             <>
               {[
                 { id: 'locker', label: 'Sheet Music Locker', icon: Music, count: myAssignedMusic.length },
+                { id: 'mros', label: 'MROs', icon: FileSpreadsheet },
                 { id: 'calendar', label: 'Squadron Calendar', icon: Calendar, count: calendarEvents.length },
                 { id: 'attendance', label: 'My Attendance', icon: CheckCircle, count: `${attendanceStats.rate}%` },
                 { id: 'absence', label: 'Excused Absence', icon: Clock, count: visibleExcusedAbsences.length },
@@ -793,6 +795,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 { id: 'roster', label: 'Roster', icon: Users, count: profiles.length },
                 { id: 'music', label: 'Music & Parts Manager', icon: Music, count: sheetMusic.length },
                 { id: 'my-parts', label: 'My Parts', icon: Music, count: myAssignedMusic.length },
+                { id: 'mros', label: 'MROs', icon: FileSpreadsheet },
                 { id: 'profile', label: 'Admin / Officer Profile', icon: User },
               ].map(t => {
                 const Icon = t.icon;
@@ -898,6 +901,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             )}
           </div>
         )}
+
+        {role === 'member' && memberTab === 'mros' && <MROSection isAdmin={false} />}
 
         {role === 'member' && memberTab === 'calendar' && (
           <SquadronCalendarView
@@ -1589,6 +1594,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             </div>
           </div>
         )}
+
+        {role === 'admin' && adminTab === 'mros' && <MROSection isAdmin={true} />}
 
         {role === 'admin' && adminTab === 'calendar' && (
           <SquadronCalendarView
