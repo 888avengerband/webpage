@@ -795,7 +795,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 { id: 'roster', label: 'Roster', icon: Users, count: profiles.length },
                 { id: 'music', label: 'Music & Parts Manager', icon: Music, count: sheetMusic.length },
                 { id: 'my-parts', label: 'My Parts', icon: Music, count: myAssignedMusic.length },
-                { id: 'mros', label: 'MROs', icon: FileSpreadsheet },
+                { id: 'mros', label: 'Important Documents', icon: FileSpreadsheet },
                 { id: 'profile', label: 'Admin / Officer Profile', icon: User },
               ].map(t => {
                 const Icon = t.icon;
