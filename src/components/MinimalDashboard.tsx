@@ -754,7 +754,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             <>
               {[
                 { id: 'locker', label: 'Sheet Music Locker', icon: Music, count: myAssignedMusic.length },
-                { id: 'mros', label: 'MROs', icon: FileSpreadsheet },
+                { id: 'mros', label: 'Important Documents', icon: FileSpreadsheet },
                 { id: 'calendar', label: 'Squadron Calendar', icon: Calendar, count: calendarEvents.length },
                 { id: 'attendance', label: 'My Attendance', icon: CheckCircle, count: `${attendanceStats.rate}%` },
                 { id: 'absence', label: 'Excused Absence', icon: Clock, count: visibleExcusedAbsences.length },
