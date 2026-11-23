@@ -221,7 +221,11 @@ async function resetMemberPassword(request, env) {
     { method: 'PUT', headers: serviceHeaders, body: JSON.stringify({ password: newPassword }) }
   );
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) return json({ error: result.msg || result.message || 'Could not reset the member password.' }, response.status || 400);
+  if (!response.ok) {
+    const details = result.msg || result.message || result.error_description || result.error || result.details;
+    const error = typeof details === 'string' ? details : (details ? JSON.stringify(details) : 'Could not reset the member password.');
+    return json({ error }, response.status || 400);
+  }
   return json({ success: true });
 }
 
