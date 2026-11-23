@@ -22,7 +22,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [rank, setRank] = useState<CadetRank>('Cdt');
-  const [instrument, setInstrument] = useState(STANDARD_INSTRUMENTS[0]);
+  const [instruments, setInstruments] = useState<string[]>([STANDARD_INSTRUMENTS[0]]);
   const [role, setRole] = useState<UserRole>('member');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         first_name: firstName,
         last_name: lastName,
         rank,
-        instrument,
+        instrument: instruments.join(', '),
         role,
       });
       setLoading(false);
@@ -185,18 +185,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Instrument</label>
-                  <select
-                    value={instrument}
-                    onChange={e => setInstrument(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
-                  >
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Instruments</label>
+                  <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-700 bg-slate-950 p-3 max-h-40 overflow-y-auto">
                     {STANDARD_INSTRUMENTS.map(i => (
-                      <option key={i} value={i}>
+                      <label key={i} className="flex items-center gap-2 text-[10px] text-slate-300">
+                        <input type="checkbox" checked={instruments.includes(i)} onChange={() => setInstruments(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i])} />
                         {i}
-                      </option>
+                      </label>
                     ))}
-                  </select>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">Select all instruments you play.</p>
                 </div>
               </div>
             </>
