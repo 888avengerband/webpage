@@ -584,7 +584,7 @@ export const MemberDashboard: React.FC = () => {
               <div>
                 <label className="block font-medium text-slate-300 mb-1">Instruments</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-lg border border-slate-700 bg-slate-950 p-3 max-h-48 overflow-y-auto">
-                  {STANDARD_INSTRUMENTS.map(i => (
+                  {Array.from(new Set([...STANDARD_INSTRUMENTS, ...editInstruments])).map(i => (
                     <label key={i} className="flex items-center gap-2 text-[11px] text-slate-300">
                       <input type="checkbox" checked={editInstruments.includes(i)} onChange={() => setEditInstruments(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i])} />
                       {i}
