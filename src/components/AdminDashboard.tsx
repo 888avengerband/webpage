@@ -126,7 +126,7 @@ export const AdminDashboard: React.FC = () => {
     }
 
     if (instrumentFilter !== 'all') {
-      list = list.filter(p => p.instrument === instrumentFilter);
+      list = list.filter(p => p.instrument.split(',').map(item => item.trim()).includes(instrumentFilter));
     }
 
     list.sort((a, b) => {
