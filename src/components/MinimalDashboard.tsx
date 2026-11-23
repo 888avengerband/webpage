@@ -192,7 +192,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   // Clickable Cadet Profile Modal (Admin)
   const [selectedCadetModal, setSelectedCadetModal] = useState<Profile | null>(null);
   const [cadetModalRank, setCadetModalRank] = useState<CadetRank>('Cdt');
-  const [cadetModalInstrument, setCadetModalInstrument] = useState('');
+  const [cadetModalInstruments, setCadetModalInstruments] = useState<string[]>([]);
   const [cadetModalEmail, setCadetModalEmail] = useState('');
   const [cadetModalFirstName, setCadetModalFirstName] = useState('');
   const [cadetModalLastName, setCadetModalLastName] = useState('');
@@ -209,7 +209,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   // Admin Profile Edit State
   const [adminRank, setAdminRank] = useState<CadetRank>(profile?.rank || 'Capt');
-  const [adminInstrument, setAdminInstrument] = useState(profile?.instrument || 'Director of Music');
+  const [adminInstruments, setAdminInstruments] = useState<string[]>(() => (profile?.instrument || 'Director of Music').split(',').map(item => item.trim()).filter(Boolean));
   const [adminEmail, setAdminEmail] = useState(profile?.cadet365_email || '');
   const [adminFirstName, setAdminFirstName] = useState(profile?.first_name || '');
   const [adminLastName, setAdminLastName] = useState(profile?.last_name || '');
@@ -253,7 +253,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   // Profile Edit state
   const [editRank, setEditRank] = useState(profile?.rank || 'Cdt');
-  const [editInstrument, setEditInstrument] = useState(profile?.instrument || 'Clarinet');
+  const [editInstruments, setEditInstruments] = useState<string[]>(() => (profile?.instrument || 'Clarinet').split(',').map(item => item.trim()).filter(Boolean));
   const [editPhone, setEditPhone] = useState(profile?.phone || '');
   const [profileSuccess, setProfileSuccess] = useState(false);
 
@@ -354,7 +354,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
       first_name: adminFirstName.trim(),
       last_name: adminLastName.trim(),
       rank: adminRank,
-      instrument: adminInstrument,
+      instrument: adminInstruments.join(', '),
       cadet365_email: adminEmail.trim(),
       phone: adminPhone.trim() || null,
     });
@@ -366,7 +366,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const handleOpenCadetModal = (cadet: Profile) => {
     setSelectedCadetModal(cadet);
     setCadetModalRank(cadet.rank);
-    setCadetModalInstrument(cadet.instrument);
+    setCadetModalInstruments(cadet.instrument.split(',').map(item => item.trim()).filter(Boolean));
     setCadetModalEmail(cadet.cadet365_email);
     setCadetModalFirstName(cadet.first_name);
     setCadetModalLastName(cadet.last_name);
@@ -384,7 +384,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     const cadetFullName = `${cadetModalRank} ${cadetModalFirstName.trim()} ${cadetModalLastName.trim()}`;
     const ok = await updateMember(selectedCadetModal.id, {
       rank: cadetModalRank,
-      instrument: cadetModalInstrument,
+      instrument: cadetModalInstruments.join(', '),
       cadet365_email: cadetModalEmail.trim(),
       first_name: cadetModalFirstName.trim(),
       last_name: cadetModalLastName.trim(),
@@ -1252,17 +1252,9 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                 </div>
                 <div>
                   <label className="block font-medium text-slate-700 mb-1">Instrument / Role</label>
-                  <select
-                    value={adminInstrument}
-                    onChange={e => setAdminInstrument(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-                  >
-                    {STANDARD_INSTRUMENTS.map(i => (
-                      <option key={i} value={i}>
-                        {i}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-700 p-3 max-h-40 overflow-y-auto">
+                  {STANDARD_INSTRUMENTS.map(i => <label key={i} className="flex items-center gap-2 text-[10px] text-slate-300"><input type="checkbox" checked={adminInstruments.includes(i)} onChange={() => setAdminInstruments(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i])} />{i}</label>)}
+                </div>
                 </div>
               </div>
 
@@ -2303,18 +2295,15 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block font-medium text-slate-700 mb-1">Instrument *</label>
-                    <select
-                      value={cadetModalInstrument}
-                      onChange={e => setCadetModalInstrument(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-                    >
+                    <label className="block font-medium text-slate-700 mb-1">Instruments *</label>
+                    <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-40 overflow-y-auto">
                       {STANDARD_INSTRUMENTS.map(i => (
-                        <option key={i} value={i}>
+                        <label key={i} className="flex items-center gap-2 text-[10px] text-slate-700">
+                          <input type="checkbox" checked={cadetModalInstruments.includes(i)} onChange={() => setCadetModalInstruments(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i])} />
                           {i}
-                        </option>
+                        </label>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 </div>
 
