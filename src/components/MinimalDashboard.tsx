@@ -218,11 +218,11 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const [rosterSearch, setRosterSearch] = useState('');
 
   type SortCriteria = 'rank' | 'last_name' | 'instrument';
-  const [rosterSortKey, setRosterSortKey] = useState<SortCriteria>('rank');
-  const [rosterSortDir, setRosterSortDir] = useState<'asc' | 'desc'>('desc');
+  const [rosterSortKey, setRosterSortKey] = useState<SortCriteria>('last_name');
+  const [rosterSortDir, setRosterSortDir] = useState<'asc' | 'desc'>('asc');
 
-  const [rollCallSortKey, setRollCallSortKey] = useState<SortCriteria>('rank');
-  const [rollCallSortDir, setRollCallSortDir] = useState<'asc' | 'desc'>('desc');
+  const [rollCallSortKey, setRollCallSortKey] = useState<SortCriteria>('last_name');
+  const [rollCallSortDir, setRollCallSortDir] = useState<'asc' | 'desc'>('asc');
 
   // Military rank weight order: Officers -> Senior NCOs -> Junior NCOs -> Cadets
   const RANK_ORDER: Record<string, number> = {
