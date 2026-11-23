@@ -1,14 +1,21 @@
--- Monthly Routine Orders (MROs)
--- Run this once in the Supabase SQL Editor for the band portal.
+-- Important Documents (formerly Monthly Routine Orders)
+-- Run this in the Supabase SQL Editor. Safe to re-run after initial setup.
 
 CREATE TABLE IF NOT EXISTS public.monthly_routine_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   description TEXT,
   document_path TEXT NOT NULL,
+  is_pinned BOOLEAN NOT NULL DEFAULT false,
   uploaded_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+ALTER TABLE public.monthly_routine_orders
+  ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_monthly_routine_orders_pinned_created_at
+  ON public.monthly_routine_orders(is_pinned DESC, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_monthly_routine_orders_created_at
   ON public.monthly_routine_orders(created_at DESC);
