@@ -33,6 +33,7 @@ import {
   Copy,
   Lock,
   Printer,
+  Menu,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBandData } from '../context/BandDataContext';
@@ -186,6 +187,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   const [assigningPartData, setAssigningPartData] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
   const [selectedPartDetails, setSelectedPartDetails] = useState<{ part: SongPart; song: SheetMusic } | null>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Clickable Cadet Profile Modal (Admin)
   const [selectedCadetModal, setSelectedCadetModal] = useState<Profile | null>(null);
@@ -621,6 +623,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
       <header className="bg-white border-b border-slate-200/90 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setIsMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={isMobileNavOpen} className="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100"><Menu className="w-6 h-6" /></button>
             <SquadronCrest size="sm" />
             <div>
               <span className="font-heading font-black text-sm text-slate-900 leading-tight block">
@@ -698,6 +701,48 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
         </div>
       </header>
 
+      {isMobileNavOpen && (
+        <div className="sm:hidden fixed inset-0 z-50">
+          <button type="button" aria-label="Close navigation menu" onClick={() => setIsMobileNavOpen(false)} className="absolute inset-0 bg-slate-950/50" />
+          <aside className="absolute inset-y-0 left-0 w-[min(82vw,320px)] bg-white shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+            <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200">
+              <div className="flex items-center gap-2"><SquadronCrest size="sm" /><span className="font-heading font-black text-sm text-slate-900"><span className="text-sky-600">888</span> Avenger Band</span></div>
+              <button type="button" onClick={() => setIsMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"><X className="w-5 h-5" /></button>
+            </div>
+            <nav className="p-3 space-y-1 overflow-y-auto">
+              {(role === 'member' ? [
+                { id: 'locker', label: 'Sheet Music Locker', icon: Music, count: myAssignedMusic.length },
+                { id: 'mros', label: 'Important Documents', icon: FileSpreadsheet },
+                { id: 'calendar', label: 'Squadron Calendar', icon: Calendar, count: calendarEvents.length },
+                { id: 'attendance', label: 'My Attendance', icon: CheckCircle, count: attendanceStats.rate + '%' },
+                { id: 'absence', label: 'Excused Absence', icon: Clock, count: visibleExcusedAbsences.length },
+                { id: 'profile', label: 'My Profile', icon: User },
+              ] : [
+                { id: 'rollcall', label: 'Roll-Call & Absences', icon: CheckCircle, count: pendingAbsences.length },
+                { id: 'calendar', label: 'Calendar & Dates', icon: Calendar, count: calendarEvents.length },
+                { id: 'roster', label: 'Roster', icon: Users, count: profiles.length },
+                { id: 'music', label: 'Music & Parts Manager', icon: Music, count: sheetMusic.length },
+                { id: 'my-parts', label: 'My Parts', icon: Music, count: myAssignedMusic.length },
+                { id: 'mros', label: 'Important Documents', icon: FileSpreadsheet },
+                { id: 'profile', label: 'Admin / Officer Profile', icon: User },
+              ]).map(item => {
+                const Icon = item.icon;
+                const isActive = role === 'member' ? memberTab === item.id : adminTab === item.id;
+                return (
+                  <button key={item.id} type="button" onClick={() => { if (role === "member") setMemberTab(item.id as any); else setAdminTab(item.id as any); setIsMobileNavOpen(false); }} className={"w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-left transition-colors " + (isActive ? "bg-sky-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-100")}>
+                    <Icon className="w-5 h-5 shrink-0" /><span className="flex-1">{item.label}</span>
+                    {item.count !== undefined && <span className={"text-[11px] font-mono px-2 py-0.5 rounded-lg " + (isActive ? "bg-sky-700 text-white" : "bg-slate-100 text-slate-600")}>{item.count}</span>}
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="mt-auto border-t border-slate-200 p-3">
+              <div className="px-3 py-2 text-xs text-slate-500 truncate">{profile.rank} {profile.first_name} {profile.last_name}</div>
+              <button type="button" onClick={() => { setIsMobileNavOpen(false); onLogout(); }} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50"><LogOut className="w-5 h-5" /> Log Out</button>
+            </div>
+          </aside>
+        </div>
+      )}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div>
@@ -750,7 +795,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-semibold">
+        <div className="hidden sm:flex items-center gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-semibold">
           {role === 'member' ? (
             <>
               {[
