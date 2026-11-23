@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- 888 AVENGER ROYAL CANADIAN AIR CADET SQUADRON (RCACS) BAND
--- SUPABASE DATABASE INITIALIZATION & ROW LEVEL SECURITY (RLS) SCRIPT
+-- COMPLETE SUPABASE DATABASE SETUP & MIGRATION SCRIPT
 -- ==============================================================================
 -- Dual Role: Admin (Band Officers & Band Seniors) vs Member (Cadet Musicians)
 -- Run this directly in your Supabase SQL Editor:
@@ -11,17 +11,16 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Clean up any existing tables if re-running
-DROP TABLE IF EXISTS public.excused_absences CASCADE;
-DROP TABLE IF EXISTS public.attendance CASCADE;
-DROP TABLE IF EXISTS public.part_assignments CASCADE;
-DROP TABLE IF EXISTS public.song_parts CASCADE;
-DROP TABLE IF EXISTS public.sheet_music CASCADE;
-DROP TABLE IF EXISTS public.profiles CASCADE;
+-- Safe to re-run: existing tables and records are preserved.
+
+
+
+
+
 
 -- 2. Create Tables
 -- 2.1 Profiles (linked 1:1 with auth.users)
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
@@ -34,7 +33,7 @@ CREATE TABLE public.profiles (
 );
 
 -- 2.2 Sheet Music (master songs)
-CREATE TABLE public.sheet_music (
+CREATE TABLE IF NOT EXISTS public.sheet_music (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     composer TEXT NOT NULL DEFAULT 'Traditional / Arranged',
@@ -42,7 +41,7 @@ CREATE TABLE public.sheet_music (
 );
 
 -- 2.3 Song Parts (instrument-specific PDF parts linked to a song)
-CREATE TABLE public.song_parts (
+CREATE TABLE IF NOT EXISTS public.song_parts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     song_id UUID NOT NULL REFERENCES public.sheet_music(id) ON DELETE CASCADE,
     instrument_part TEXT NOT NULL,
@@ -51,8 +50,10 @@ CREATE TABLE public.song_parts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
+ALTER TABLE public.song_parts ADD COLUMN IF NOT EXISTS part_name TEXT NOT NULL DEFAULT 'Main Part';
+
 -- 2.4 Part Assignments (maps song_parts to individual cadet profiles; many-to-many)
-CREATE TABLE public.part_assignments (
+CREATE TABLE IF NOT EXISTS public.part_assignments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     song_part_id UUID NOT NULL REFERENCES public.song_parts(id) ON DELETE CASCADE,
     profile_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -61,7 +62,7 @@ CREATE TABLE public.part_assignments (
 );
 
 -- 2.5 Attendance (rehearsals & parade attendance log)
-CREATE TABLE public.attendance (
+CREATE TABLE IF NOT EXISTS public.attendance (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     date DATE NOT NULL,
@@ -72,7 +73,7 @@ CREATE TABLE public.attendance (
 );
 
 -- 2.6 Excused Absences (cadet submitted absence requests)
-CREATE TABLE public.excused_absences (
+CREATE TABLE IF NOT EXISTS public.excused_absences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     date_of_absence DATE NOT NULL,
@@ -82,15 +83,15 @@ CREATE TABLE public.excused_absences (
 );
 
 -- 3. Indexes for fast queries
-CREATE INDEX idx_profiles_role ON public.profiles(role);
-CREATE INDEX idx_profiles_cadet365 ON public.profiles(cadet365_email);
-CREATE INDEX idx_song_parts_song_id ON public.song_parts(song_id);
-CREATE INDEX idx_part_assignments_profile ON public.part_assignments(profile_id);
-CREATE INDEX idx_part_assignments_part ON public.part_assignments(song_part_id);
-CREATE INDEX idx_attendance_date ON public.attendance(date);
-CREATE INDEX idx_attendance_profile ON public.attendance(profile_id);
-CREATE INDEX idx_excused_absences_profile ON public.excused_absences(profile_id);
-CREATE INDEX idx_excused_absences_date ON public.excused_absences(date_of_absence);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_cadet365 ON public.profiles(cadet365_email);
+CREATE INDEX IF NOT EXISTS idx_song_parts_song_id ON public.song_parts(song_id);
+CREATE INDEX IF NOT EXISTS idx_part_assignments_profile ON public.part_assignments(profile_id);
+CREATE INDEX IF NOT EXISTS idx_part_assignments_part ON public.part_assignments(song_part_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON public.attendance(date);
+CREATE INDEX IF NOT EXISTS idx_attendance_profile ON public.attendance(profile_id);
+CREATE INDEX IF NOT EXISTS idx_excused_absences_profile ON public.excused_absences(profile_id);
+CREATE INDEX IF NOT EXISTS idx_excused_absences_date ON public.excused_absences(date_of_absence);
 
 -- 4. Helper function to check admin role
 CREATE OR REPLACE FUNCTION public.is_admin()
@@ -155,24 +156,29 @@ ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.excused_absences ENABLE ROW LEVEL SECURITY;
 
 -- 6.1 Profiles Policies
+DROP POLICY IF EXISTS "Admins full access to all profiles" ON public.profiles;
 CREATE POLICY "Admins full access to all profiles"
 ON public.profiles FOR ALL TO authenticated
 USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Members can view own profile" ON public.profiles;
 CREATE POLICY "Members can view own profile"
 ON public.profiles FOR SELECT TO authenticated
 USING (id = auth.uid());
 
+DROP POLICY IF EXISTS "Members can update own profile" ON public.profiles;
 CREATE POLICY "Members can update own profile"
 ON public.profiles FOR UPDATE TO authenticated
 USING (id = auth.uid())
 WITH CHECK (id = auth.uid() AND role = (SELECT role FROM public.profiles WHERE id = auth.uid()));
 
 -- 6.2 Sheet Music Policies
+DROP POLICY IF EXISTS "Admins full access to sheet_music" ON public.sheet_music;
 CREATE POLICY "Admins full access to sheet_music"
 ON public.sheet_music FOR ALL TO authenticated
 USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Members can view assigned sheet music" ON public.sheet_music;
 CREATE POLICY "Members can view assigned sheet music"
 ON public.sheet_music FOR SELECT TO authenticated
 USING (
@@ -184,10 +190,12 @@ USING (
 );
 
 -- 6.3 Song Parts Policies
+DROP POLICY IF EXISTS "Admins full access to song_parts" ON public.song_parts;
 CREATE POLICY "Admins full access to song_parts"
 ON public.song_parts FOR ALL TO authenticated
 USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Members can view assigned song parts" ON public.song_parts;
 CREATE POLICY "Members can view assigned song parts"
 ON public.song_parts FOR SELECT TO authenticated
 USING (
@@ -198,32 +206,39 @@ USING (
 );
 
 -- 6.4 Part Assignments Policies
+DROP POLICY IF EXISTS "Admins full access to part_assignments" ON public.part_assignments;
 CREATE POLICY "Admins full access to part_assignments"
 ON public.part_assignments FOR ALL TO authenticated
 USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Members can view own part_assignments" ON public.part_assignments;
 CREATE POLICY "Members can view own part_assignments"
 ON public.part_assignments FOR SELECT TO authenticated
 USING (profile_id = auth.uid());
 
 -- 6.5 Attendance Policies
+DROP POLICY IF EXISTS "Admins full access to attendance" ON public.attendance;
 CREATE POLICY "Admins full access to attendance"
 ON public.attendance FOR ALL TO authenticated
 USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Members can view own attendance records" ON public.attendance;
 CREATE POLICY "Members can view own attendance records"
 ON public.attendance FOR SELECT TO authenticated
 USING (profile_id = auth.uid());
 
 -- 6.6 Excused Absences Policies
+DROP POLICY IF EXISTS "Admins full access to excused_absences" ON public.excused_absences;
 CREATE POLICY "Admins full access to excused_absences"
 ON public.excused_absences FOR ALL TO authenticated
 USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Members can view own excused absences" ON public.excused_absences;
 CREATE POLICY "Members can view own excused absences"
 ON public.excused_absences FOR SELECT TO authenticated
 USING (profile_id = auth.uid());
 
+DROP POLICY IF EXISTS "Members can submit excused absence" ON public.excused_absences;
 CREATE POLICY "Members can submit excused absence"
 ON public.excused_absences FOR INSERT TO authenticated
 WITH CHECK (profile_id = auth.uid());
@@ -249,3 +264,77 @@ CREATE POLICY "Admins can update and delete sheet music files"
 ON storage.objects FOR ALL TO authenticated
 USING (bucket_id = 'sheet-music' AND public.is_admin())
 WITH CHECK (bucket_id = 'sheet-music' AND public.is_admin());
+
+
+-- ==============================================================================
+-- 8. IMPORTANT DOCUMENTS (formerly Monthly Routine Orders)
+-- ==============================================================================
+-- Important Documents (formerly Monthly Routine Orders)
+-- Run this in the Supabase SQL Editor. Safe to re-run after initial setup.
+
+CREATE TABLE IF NOT EXISTS public.monthly_routine_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  document_path TEXT NOT NULL,
+  is_pinned BOOLEAN NOT NULL DEFAULT false,
+  uploaded_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.monthly_routine_orders
+  ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_monthly_routine_orders_pinned_created_at
+  ON public.monthly_routine_orders(is_pinned DESC, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_monthly_routine_orders_created_at
+  ON public.monthly_routine_orders(created_at DESC);
+
+ALTER TABLE public.monthly_routine_orders ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated users can view MROs" ON public.monthly_routine_orders;
+CREATE POLICY "Authenticated users can view MROs"
+ON public.monthly_routine_orders
+FOR SELECT TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage MRO records" ON public.monthly_routine_orders;
+CREATE POLICY "Admins can manage MRO records"
+ON public.monthly_routine_orders
+FOR ALL TO authenticated
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+-- Private bucket: documents are only delivered through short-lived signed URLs.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('mros', 'mros', false, 20971520, ARRAY['application/pdf'])
+ON CONFLICT (id) DO UPDATE SET
+  public = false,
+  file_size_limit = 20971520,
+  allowed_mime_types = ARRAY['application/pdf'];
+
+DROP POLICY IF EXISTS "Authenticated users can view MRO PDFs" ON storage.objects;
+CREATE POLICY "Authenticated users can view MRO PDFs"
+ON storage.objects
+FOR SELECT TO authenticated
+USING (bucket_id = 'mros');
+
+DROP POLICY IF EXISTS "Admins can upload MRO PDFs" ON storage.objects;
+CREATE POLICY "Admins can upload MRO PDFs"
+ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'mros' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can update MRO PDFs" ON storage.objects;
+CREATE POLICY "Admins can update MRO PDFs"
+ON storage.objects
+FOR UPDATE TO authenticated
+USING (bucket_id = 'mros' AND public.is_admin())
+WITH CHECK (bucket_id = 'mros' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can delete MRO PDFs" ON storage.objects;
+CREATE POLICY "Admins can delete MRO PDFs"
+ON storage.objects
+FOR DELETE TO authenticated
+USING (bucket_id = 'mros' AND public.is_admin());
