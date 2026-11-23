@@ -58,10 +58,10 @@ Navigate to `http://localhost:3000`.
 
 1. Log into your [Supabase Dashboard](https://supabase.com/dashboard).
 2. Open the **SQL Editor** tab.
-3. Open `/supabase-schema.sql` (or click the **Supabase SQL** button in the portal header to copy it with 1 click).
+3. Open the single master file `/supabase-schema.sql` and copy its full contents.
 4. Paste the entire script into the SQL editor and click **Run**.
 
-The script creates an empty database; it does not insert roster, music, attendance, calendar, or absence records. New accounts are always created as `member` accounts. After creating the first officer account, promote it in the SQL Editor with:
+The script creates or updates the portal tables, security policies, and Storage buckets, including Important Documents. It is safe to re-run and does not drop existing tables or records. It does not insert roster, music, attendance, calendar, or absence records. New accounts are always created as `member` accounts. After creating the first officer account, promote it in the SQL Editor with:
 
 ```sql
 UPDATE public.profiles
@@ -76,7 +76,8 @@ WHERE cadet365_email = 'officer-email@example.com';
 - `part_assignments`: Maps song parts to individual cadets (`song_part_id`, `profile_id`).
 - `attendance`: Rehearsal logs (`profile_id`, `date`, `status`, `marked_by`, `created_at`).
 - `excused_absences`: Cadet absence requests (`profile_id`, `date_of_absence`, `reason`, `status`).
-- `storage.buckets`: Public bucket `'sheet-music'` with 50MB file size limit for PDFs.
+- `monthly_routine_orders`: Important Documents metadata, including pinning and uploaded PDF paths.
+- `storage.buckets`: Public `'sheet-music'` bucket (50MB PDFs) and private `'mros'` bucket (20MB PDFs) for Important Documents.
 
 ---
 
