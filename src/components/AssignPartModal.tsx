@@ -47,11 +47,11 @@ export const AssignPartModal: React.FC<AssignPartModalProps> = ({
 
   // Include both admins and members in part assignments
   const eligibleProfiles = profiles.filter(p => p.role === 'admin' || p.role === 'member');
-  const instruments = Array.from(new Set(eligibleProfiles.map(p => p.instrument)));
+  const instruments = Array.from(new Set(eligibleProfiles.flatMap(p => p.instrument.split(',').map(item => item.trim()).filter(Boolean))));
 
   const filteredCadets = eligibleProfiles.filter(p => {
     if (filterInstrument === 'all') return true;
-    return p.instrument === filterInstrument;
+    return p.instrument.split(',').map(item => item.trim()).includes(filterInstrument);
   });
 
   return (
