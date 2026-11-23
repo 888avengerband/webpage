@@ -15,7 +15,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
   const [lastName, setLastName] = useState('');
   const [rank, setRank] = useState<CadetRank>('Cdt');
   const [cadet365Email, setCadet365Email] = useState('');
-  const [instrument, setInstrument] = useState<string>(STANDARD_INSTRUMENTS[0]);
+  const [instruments, setInstruments] = useState<string[]>([STANDARD_INSTRUMENTS[0]]);
   const [role, setRole] = useState<UserRole>('member');
   const [phone, setPhone] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState('');
@@ -49,7 +49,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       last_name: lastName.trim(),
       rank,
       cadet365_email: cadet365Email.trim().toLowerCase(),
-      instrument,
+      instrument: instruments.join(', '),
       role,
       phone: phone.trim() || null,
       temporary_password: temporaryPassword,
@@ -64,7 +64,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
       setPhone('');
       setTemporaryPassword('');
       setRank('Cdt');
-      setInstrument(STANDARD_INSTRUMENTS[0]);
+      setInstruments([STANDARD_INSTRUMENTS[0]]);
       setRole('member');
       onClose();
     } else {
@@ -191,18 +191,16 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose 
           </div>
 
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Primary Instrument</label>
-            <select
-              value={instrument}
-              onChange={e => setInstrument(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-sky-500"
-            >
+            <label className="block font-medium text-slate-700 mb-1">Instruments *</label>
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-40 overflow-y-auto">
               {STANDARD_INSTRUMENTS.map(inst => (
-                <option key={inst} value={inst}>
+                <label key={inst} className="flex items-center gap-2 text-[11px] text-slate-700">
+                  <input type="checkbox" checked={instruments.includes(inst)} onChange={() => setInstruments(prev => prev.includes(inst) ? prev.filter(item => item !== inst) : [...prev, inst])} />
                   {inst}
-                </option>
+                </label>
               ))}
-            </select>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">Select every instrument this member plays. Selected: {instruments.join(', ') || 'None'}</p>
           </div>
 
           <div>
