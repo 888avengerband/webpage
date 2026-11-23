@@ -253,7 +253,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
 
   // Profile Edit state
   const [editRank, setEditRank] = useState(profile?.rank || 'Cdt');
-  const [editInstruments, setEditInstruments] = useState<string[]>(() => (profile?.instrument || 'Clarinet').split(',').map(item => item.trim()).filter(Boolean));
   const [editPhone, setEditPhone] = useState(profile?.phone || '');
   const [profileSuccess, setProfileSuccess] = useState(false);
 
@@ -2297,7 +2296,7 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
                   <div>
                     <label className="block font-medium text-slate-700 mb-1">Instruments *</label>
                     <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-40 overflow-y-auto">
-                      {STANDARD_INSTRUMENTS.map(i => (
+                      {Array.from(new Set([...STANDARD_INSTRUMENTS, ...cadetModalInstruments])).map(i => (
                         <label key={i} className="flex items-center gap-2 text-[10px] text-slate-700">
                           <input type="checkbox" checked={cadetModalInstruments.includes(i)} onChange={() => setCadetModalInstruments(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i])} />
                           {i}
