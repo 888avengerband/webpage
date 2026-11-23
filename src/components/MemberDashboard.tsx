@@ -44,7 +44,7 @@ export const MemberDashboard: React.FC = () => {
 
   // Profile Edit form state
   const [editRank, setEditRank] = useState(profile?.rank || 'Cdt');
-  const [editInstrument, setEditInstrument] = useState(profile?.instrument || 'Clarinet');
+  const [editInstruments, setEditInstruments] = useState<string[]>(() => (profile?.instrument || 'Clarinet').split(',').map(item => item.trim()).filter(Boolean));
   const [editPhone, setEditPhone] = useState(profile?.phone || '');
   const [profileSavedMessage, setProfileSavedMessage] = useState(false);
 
@@ -78,7 +78,7 @@ export const MemberDashboard: React.FC = () => {
     e.preventDefault();
     await updateCurrentProfile({
       rank: editRank,
-      instrument: editInstrument,
+      instrument: editInstruments.join(', '),
       phone: editPhone.trim() || null,
     });
     setProfileSavedMessage(true);
@@ -130,7 +130,7 @@ export const MemberDashboard: React.FC = () => {
                 {profile.first_name} {profile.last_name}
               </h1>
               <p className="text-xs text-slate-200 mt-0.5">
-                Instrument: <strong className="text-amber-300 font-semibold">{profile.instrument}</strong> · 888 Avenger Squadron Band (Vancouver, BC)
+                Instruments: <strong className="text-amber-300 font-semibold">{profile.instrument}</strong> · 888 Avenger Squadron Band (Vancouver, BC)
               </p>
             </div>
           </div>
@@ -582,18 +582,16 @@ export const MemberDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300 mb-1">Primary Instrument</label>
-                <select
-                  value={editInstrument}
-                  onChange={e => setEditInstrument(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
-                >
+                <label className="block font-medium text-slate-300 mb-1">Instruments</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-lg border border-slate-700 bg-slate-950 p-3 max-h-48 overflow-y-auto">
                   {STANDARD_INSTRUMENTS.map(i => (
-                    <option key={i} value={i}>
+                    <label key={i} className="flex items-center gap-2 text-[11px] text-slate-300">
+                      <input type="checkbox" checked={editInstruments.includes(i)} onChange={() => setEditInstruments(prev => prev.includes(i) ? prev.filter(item => item !== i) : [...prev, i])} />
                       {i}
-                    </option>
+                    </label>
                   ))}
-                </select>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">Select all instruments you play.</p>
               </div>
             </div>
 
