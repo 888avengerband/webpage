@@ -5,7 +5,6 @@ import { SplashPage } from './components/SplashPage';
 import { LoginPage } from './components/LoginPage';
 import { MinimalDashboard } from './components/MinimalDashboard';
 import { ForgotPasswordPage } from './components/ForgotPasswordPage';
-import { SupabaseSettingsModal } from './components/SupabaseSettingsModal';
 
 type AppRoute = '/' | '/login' | '/forgot-password' | '/home';
 
@@ -21,7 +20,6 @@ const MainAppContent: React.FC = () => {
 
   // App flow: splash -> login -> minimal dashboard
   const [route, setRoute] = useState<AppRoute>(() => normalizePath(window.location.pathname));
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   useEffect(() => {
     const onPopState = () => setRoute(normalizePath(window.location.pathname));
@@ -59,15 +57,9 @@ const MainAppContent: React.FC = () => {
       {route === '/home' && profile && (
         <MinimalDashboard
           onLogout={async () => { await signOut(); navigate('/'); }}
-          onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
         />
       )}
 
-      {/* Global Modals */}
-      <SupabaseSettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-      />
     </div>
   );
 };
