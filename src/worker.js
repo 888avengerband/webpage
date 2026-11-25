@@ -172,6 +172,41 @@ async function createMember(request, env) {
   return json({ profile: profileResult[0] }, 201);
 }
 
+async function updateMemberAuth(request, env) {
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  if (!supabaseUrl || !env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'Server Supabase credentials are not configured.' }, 500);
+  const authorization = request.headers.get('Authorization');
+  if (!authorization?.startsWith('Bearer ')) return json({ error: 'Authentication required.' }, 401);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid request body.' }, 400); }
+  const userId = String(body?.user_id || '');
+  if (!userId) return json({ error: 'Member ID is required.' }, 400);
+  const serviceHeaders = { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' };
+  const callerResponse = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: authorization } });
+  if (!callerResponse.ok) return json({ error: 'Invalid or expired Supabase session.' }, 401);
+  const caller = await callerResponse.json();
+  const adminProfileResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=id,role&limit=1`, { headers: serviceHeaders });
+  const adminProfiles = adminProfileResponse.ok ? await adminProfileResponse.json() : [];
+  if (adminProfiles[0]?.role !== 'admin') return json({ error: 'Unauthorized: Admin role required.' }, 403);
+  const getUserResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`, { headers: serviceHeaders });
+  const current = await getUserResponse.json().catch(() => ({}));
+  if (!getUserResponse.ok || !current.user?.id) return json({ error: current.message || 'Could not find Auth user for this profile.' }, getUserResponse.status || 404);
+  const updates = {};
+  if (body.email !== undefined) {
+    const email = String(body.email).trim().toLowerCase();
+    if (!email) return json({ error: 'Email cannot be blank.' }, 400);
+    updates.email = email;
+    updates.email_confirm = true;
+  }
+  const metadata = { ...(current.user.user_metadata || {}) };
+  for (const key of ['first_name', 'last_name', 'rank', 'instrument', 'role', 'phone']) if (body[key] !== undefined) metadata[key] = body[key];
+  updates.user_metadata = metadata;
+  const updateResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: 'PUT', headers: serviceHeaders, body: JSON.stringify(updates) });
+  const result = await updateResponse.json().catch(() => ({}));
+  if (!updateResponse.ok) return json({ error: result.msg || result.message || result.error_description || 'Could not update Auth account.' }, updateResponse.status || 400);
+  return json({ success: true, user: result.user || result });
+}
+
 async function resetMemberPassword(request, env) {
   const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
   if (!supabaseUrl || !env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -236,6 +271,11 @@ export default {
     if (url.pathname === '/api/admin/create-member') {
       if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
       return createMember(request, env);
+    }
+
+    if (url.pathname === '/api/admin/update-member-auth') {
+      if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
+      return updateMemberAuth(request, env);
     }
 
     if (url.pathname === '/api/admin/reset-member-password') {
