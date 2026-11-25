@@ -25,8 +25,6 @@ import {
   Mail,
   Award,
   ExternalLink,
-  Settings,
-  Database,
   ArrowLeft,
   X,
   KeyRound,
@@ -97,13 +95,11 @@ const getVancouverDateString = (date = new Date()): string => {
 interface MinimalDashboardProps {
   onLogout: () => void;
   onOpenSqlModal: () => void;
-  onOpenSettingsModal: () => void;
 }
 
 export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   onLogout,
   onOpenSqlModal,
-  onOpenSettingsModal,
 }) => {
   const {
     profile,
@@ -636,14 +632,6 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={onOpenSettingsModal}
-              title="Database Settings"
-              className="p-2 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-slate-200"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-
             <div className="relative">
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
