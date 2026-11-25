@@ -502,18 +502,25 @@ export const BandDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateMember = async (id: string, updates: Partial<Profile>): Promise<boolean> => {
     if (!isAdmin && profile?.id !== id) return false;
 
-    setProfiles(prev =>
-      prev.map(p => (p.id === id ? { ...p, ...updates } : p))
-    );
-
     const supabase = getSupabaseClient();
-    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+    if (supabase && isSupabaseConfigured() && isLiveSupabase && isAdmin) {
       try {
-        await supabase.from('profiles').update(updates).eq('id', id);
-      } catch (err) {
-        console.warn('Supabase update warning:', err);
-      }
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session) return false;
+        const authResponse = await fetch('/api/admin/update-member-auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session.access_token}` },
+          body: JSON.stringify({ user_id: id, email: updates.cadet365_email, first_name: updates.first_name, last_name: updates.last_name, rank: updates.rank, instrument: updates.instrument, role: updates.role, phone: updates.phone }),
+        });
+        const authResult = await authResponse.json().catch(() => ({}));
+        if (!authResponse.ok) { console.error('Auth update failed:', authResult.error); return false; }
+      } catch (err) { console.error('Auth update failed:', err); return false; }
     }
+    if (supabase && isSupabaseConfigured() && isLiveSupabase) {
+      const { error } = await supabase.from('profiles').update(updates).eq('id', id);
+      if (error) { console.error('Supabase profile update failed:', error); return false; }
+    }
+    setProfiles(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)));
     return true;
   };
 
