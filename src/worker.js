@@ -199,7 +199,7 @@ async function updateMemberAuth(request, env) {
     updates.email = email;
     updates.email_confirm = true;
   }
-  const metadata = { ...(current.user.user_metadata || {}) };
+  const metadata = { ...(current.user_metadata || {}) };
   for (const key of ['first_name', 'last_name', 'rank', 'instrument', 'role', 'phone']) if (body[key] !== undefined) metadata[key] = body[key];
   updates.user_metadata = metadata;
   const updateResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: 'PUT', headers: serviceHeaders, body: JSON.stringify(updates) });
