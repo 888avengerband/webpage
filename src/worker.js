@@ -190,7 +190,8 @@ async function updateMemberAuth(request, env) {
   if (adminProfiles[0]?.role !== 'admin') return json({ error: 'Unauthorized: Admin role required.' }, 403);
   const getUserResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`, { headers: serviceHeaders });
   const current = await getUserResponse.json().catch(() => ({}));
-  if (!getUserResponse.ok || !current.user?.id) return json({ error: current.message || 'Could not find Auth user for this profile.' }, getUserResponse.status || 404);
+  // Supabase's raw REST admin endpoint returns the user object directly (not { user: ... }).
+  if (!getUserResponse.ok || !current.id) return json({ error: current.message || current.msg || 'Could not find Auth user for this profile.' }, getUserResponse.status || 404);
   const updates = {};
   if (body.email !== undefined) {
     const email = String(body.email).trim().toLowerCase();
