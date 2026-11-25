@@ -245,16 +245,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const supabase = getSupabaseClient();
     if (supabase && isSupabaseConfigured() && isLiveSupabase) {
-      try {
-        await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('id', activeProfile.id);
-      } catch (err) {
-        console.error('Error updating live Supabase profile:', err);
+      if (activeProfile.role === 'admin') {
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError || !sessionData.session) return false;
+          const authResponse = await fetch('/api/admin/update-member-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session.access_token}` },
+            body: JSON.stringify({ user_id: activeProfile.id, email: updates.cadet365_email, first_name: updates.first_name, last_name: updates.last_name, rank: updates.rank, instrument: updates.instrument, role: updates.role, phone: updates.phone }),
+          });
+          const authResult = await authResponse.json().catch(() => ({}));
+          if (!authResponse.ok) { console.error('Auth profile update failed:', authResult.error); return false; }
+        } catch (err) { console.error('Auth profile update failed:', err); return false; }
       }
+      const { error } = await supabase.from('profiles').update(updates).eq('id', activeProfile.id);
+      if (error) { console.error('Error updating live Supabase profile:', error); return false; }
     }
-
     setProfiles(prev => prev.map(p => (p.id === activeProfile.id ? updatedProfile : p)));
     return true;
   };
